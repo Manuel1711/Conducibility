@@ -1,0 +1,26 @@
+#include <fstream>
+#include <iostream>
+#include <math.h>
+#include <TH1F.h>
+
+using namespace std;
+
+
+
+
+
+int main(){
+
+
+  //Input Correlatori
+  FILE *Correlators_Inputs;
+  char open_Correlators_Inputs[1024];
+  
+  
+
+
+
+
+  return 0;
+
+}
