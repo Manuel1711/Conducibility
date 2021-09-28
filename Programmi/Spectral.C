@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <math.h>
+#include <gsl/gsl_integration.h>
 //#include <TH1F.h>
 
 using namespace std;
