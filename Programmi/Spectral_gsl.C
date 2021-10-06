@@ -1,44 +1,108 @@
-//g++ -Wall -I/mnt/c/Users/navigl/Desktop/gsl/include -o Spectral Spectral.C `gsl-config --cflags --libs`
+//g++ A-Wall -O0 -ggdb3 -lgmp -lgmpxx -std=c++11 -I/mnt/c/Users/navigl/Desktop/gsl/include -o Spectral_gsl Spectral_gsl.C `gsl-config --cflags --libs`
+
+//g++ -o Spectral_gsl Spectral_gsl.C -O0 -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx -L/Users/manuel/Desktop/gmpfrxx  -g -Wall -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
 
 #include <fstream>
 #include <iostream>
 #include <math.h>
 #include <gsl/gsl_integration.h>
+#include <sstream>
+#include <vector>
+#include <cmath>
+#include "gmpfrxx.h"
 
 
 using namespace std;
+using T=mpfr_class;
+
+
+/////////////////////////////////////////                                   
+//SETTA LA PRECISIONE DESIDERATA IN BITS                                   
+const int P = 560;
+/////////////////////////////////////////
+
 
 double Corr[10];
 
+
+
+string conv(const mpfr_class& in)
+{
+  ostringstream os;
+  os.precision(mpf_get_default_prec()/4);
+  
+  os<<in;
+
+  return os.str();
+}
+
+mpfr_class conv(const string& in)
+{
+  istringstream is(in);
+
+  mpfr_class out;
+
+  is>>out;
+
+  return out;
+}
+
+
+
+
 struct params_t{
   
-  double t_i;
-  double t_j;
-  double t;
-  double beta;
-  double bar_omega;
-  params_t(double t_i, double t_j, double beta, double bar_omega) : t_i(t_i), t_j(t_j), beta(beta), bar_omega(bar_omega) {}
+  T t_i;
+  T t_j;
+  T t;
+  T beta;
+  T bar_omega;
+  params_t(T t_i, T t_j, T beta, T bar_omega) : t_i(t_i), t_j(t_j), beta(beta), bar_omega(bar_omega) {}
   
 };
 
 
-double K(double omega, double t, double beta){
+T K(T omega, T t, T beta){
   
+  //cout << "KK om: " << omega << "  " << t << "  " << beta << endl;
+  //cout << "KK: " << cosh(omega*(t - beta/2)) << "  " << sinh(beta*omega/2)<< endl;
+  //cout << "KK: " << cosh(omega*(t - beta/2))/sinh(beta*omega/2)<< endl;
   
-  return cosh(omega*(t - beta/2))/sinh(beta*omega/2);
-  
+  T A=cosh(omega*(t - beta/2));
+  T B=sinh(beta*omega/2);
+  return A/B;
 }
  
 double Integrand(double s, void *arg){ 
   
   params_t *params=(params_t*)arg;
   
-  double ti = params->t;
-  double tj = params->t;
-  double beta = params->beta;
-  double bar_omega = params->bar_omega;
+  T ti = params->t_i;
+  T tj = params->t_j;
+  T beta = params->beta;
+  T bar_omega = params->bar_omega;
   
-  return K(s,ti,beta)*pow((s-bar_omega),2)*K(s,tj,beta);
+  
+  cout << "QUA " << endl;
+  /*string res=conv(K(s,ti,beta)*(s-bar_omega)*(s-bar_omega)*K(s,tj,beta)).c_str();
+  cout << "HERE: " << res << "  " << s <<endl;
+  double Int;
+  
+  if(s > 3500){
+    Int=0;
+  }
+  else{
+    Int=stod(res); 
+  }
+  cout << "INT: " << Int << endl;
+  */
+  
+  T A;
+  A =K(s,ti,beta)*(s-bar_omega)*(s-bar_omega)*K(s,tj,beta);
+  double Int = mpfr_get_d(A, MPFR_RNDZ);
+  
+  
+  return Int;
   
 }
 
@@ -50,33 +114,50 @@ double Integrand(double s, void *arg){
 
 
 int main(){
-
-  double t_i=1, t_j=1, beta=0.01, bar_omega=0;
+  
+  //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
+  mpfr_set_default_prec(P);
+  //mpf_set_default_prec( P );
+  
+  
+  T t_i=0.1, t_j=0.2, beta=1, bar_omega=0;
   params_t params(t_i,t_j,beta,bar_omega);
   
+  K(200000, t_i, beta);
+  
+  
   //Plot integrando in funzione di s
-  FILE *Integrand_beha;
-  char open_Integrand_beha[1024];
+  FILE *Integrand_beha, *K_beha;
+  char open_Integrand_beha[1024], open_K_beha[1024];
 
   sprintf(open_Integrand_beha, "Output/Integrand_beha.out");
+  sprintf(open_K_beha, "Output/K_beha.out");
   
   if ((Integrand_beha = fopen(open_Integrand_beha, "w")) == NULL ){
     printf("Error opening the output file: %s\n",open_Integrand_beha);
     exit(EXIT_FAILURE);
   }
 
-  for(double i=0; i<100; i++){
+  if ((K_beha = fopen(open_K_beha, "w")) == NULL ){
+    printf("Error opening the output file: %s\n",open_K_beha);
+    exit(EXIT_FAILURE);
+  }
 
-    fprintf(Integrand_beha, "%lf " "%lf\n", i/10, Integrand(i, &params));
+  
+  for(double i=0; i<1000; i++){
+    
+    fprintf(Integrand_beha, "%lf " "%s\n", i/1000+0.0100, conv(Integrand(i/1000+0.01, &params)).c_str());
+    fprintf(K_beha, "%lf " "%s\n", i/1000+0.0100, conv(K(i/1000+0.0100,t_i, beta)).c_str());
 
   }
 
   fclose(Integrand_beha);
+  fclose(K_beha);
   
-
-
+  
   //Integrale
-  int workspace_size=100000;
+  int workspace_size=10000000;
+  cout << "SSS " << endl;
   gsl_integration_workspace *workspace=gsl_integration_workspace_alloc(workspace_size);
   
   
@@ -87,12 +168,19 @@ int main(){
   
   
   double result, abserr;
-  double start=0.2, epsabs=0,epsrel=1e-6;
+  double start=0, epsabs=0,epsrel=1e-6;
+  
+  
+  cout << "LLL " << endl;
   
   gsl_integration_qagiu(&f,start,epsabs,epsrel,workspace_size, workspace, &result, &abserr);
   
+  cout << "KKK " << endl;
   
   gsl_integration_workspace_free(workspace);
+
+  cout << "R: " << result << endl;;
+  
   
   return 0;
   
