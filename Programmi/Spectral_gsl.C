@@ -11,23 +11,38 @@
 #include <cmath>
 #include "gmpfrxx.h" 
 #include <eigen3/Eigen/Dense>
- 
+
+
+#define Pi 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
+
 using namespace std;
 using namespace Eigen;
 using T=mpfr_class;
 
+using PrecMatr= Matrix<T,Dynamic,Dynamic>;
+using PrecVec = Matrix<T,Dynamic, 1>;
+ 
 
 int K_choice = 1;
 
+//Scelta metodo
+// 0=BG, 1=Nazario
+int Method_choice = 0;
+
+
 /////////////////////////////////////////                                   
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
-const int P = 512;
+const int P = 1024;
 /////////////////////////////////////////
 
 
 //Parameters of the computation
-T beta=10, bar_omega=0.5;
-#define D_Latt 15
+T beta=10, Estar=0.5;
+#define D_Latt 31
+//Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
+T sigma=0.1;
+T E0=0.1;
+T alpha=0;
 ////////////////////////////////////////
 
 
@@ -39,6 +54,19 @@ T t_glb_R;
 
 
 /////////////////////////////////////////
+
+struct params_t{
+  
+  T t_i;
+  T t_j;
+  T t;
+  T beta;
+  T bar_omega;
+params_t(T t_i, T t_j, T beta, T bar_omega) : t_i(t_i), t_j(t_j), beta(beta), bar_omega(bar_omega) {}
+params_t(T t, T beta, T bar_omega) : t(t), beta(beta), bar_omega(bar_omega) {}
+  
+  
+};
 
 
 
@@ -68,32 +96,45 @@ mpfr_class conv(const string& in)
 
 
 
+T Z(){
 
-struct params_t{
-  
-  T t_i;
-  T t_j;
-  T t;
-  T beta;
-  T bar_omega;
-params_t(T t_i, T t_j, T beta, T bar_omega) : t_i(t_i), t_j(t_j), beta(beta), bar_omega(bar_omega) {}
-params_t(T t, T beta, T bar_omega) : t(t), beta(beta), bar_omega(bar_omega) {}
-  
-  
-};
-
-
-T W_an(T ti, T tj, T Estar){
-  
-  return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/(pow(ti+tj,3));
+  return (1+erf(Estar/(sqrt(2)*sigma)))/2;
   
 }
 
+
+T Target_F(T E){
+  
+   return exp(-pow(E-Estar,2)/(2*sigma*sigma))/(sqrt(2*Pi)*sigma*Z());
+  
+}
+
+T W_an(T ti, T tj, T Estar){
+  
+  //return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/(pow(ti+tj,3));
+  if(Method_choice==1) return exp(-(ti+tj-alpha)*E0)/(ti+tj-alpha);
+  else if(Method_choice==0) return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/pow(ti+tj,3);
+}
+
+
+
+
+T N(T t){
+  
+  //cout << " N: " << 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2) << endl;
+  return 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2);
+}
+
+T D(T t){
+  
+  cout << "D: " << 1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) << " erf: " << erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) <<"   " << (alpha-t)*pow(sigma,2)+Estar-E0   << endl;
+  return  1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)); 
+  
+}
+
+
 T K(T omega, T t, T beta){
   
-  //cout << "KK om: " << omega << "  " << t << "  " << beta << endl;
-  //cout << "KK: " << cosh(omega*(t - beta/2)) << "  " << sinh(beta*omega/2)<< endl;
-  //cout << "KK: " << cosh(omega*(t - beta/2))/sinh(beta*omega/2)<< endl;
   
   T ret;
   
@@ -115,41 +156,6 @@ T K(T omega, T t, T beta){
   return ret; //Aggiunta f(\omega)=\omega necessaria per regolarizzazione in \omega=0
 }
 
-double Integrand_W(double s, void *arg){ 
-  
-  params_t *params=(params_t*)arg;
-  
-  T ti = params->t_i;
-  T tj = params->t_j;
-  T beta = params->beta;
-  T bar_omega = params->bar_omega;
-
-  
-
-  
-  
-  T A;
-  
-  A = K(s,ti,beta)*(s-bar_omega)*(s-bar_omega)*K(s,tj,beta);
-  //cout << "A: " << A << endl;
-  double Int = A.get_d();
-  
-  
-  return Int;
-  
-}
-
-
-double Integrand_R(double s, void *arg){
-
-  params_t *params=(params_t*)arg;
-
-  T t = params->t;
-  T beta = params->beta;
-  t=t_glb_R;
-  return K(s,t,beta).get_d();
-  
-}
 
 
 
@@ -175,14 +181,14 @@ T q_i(T **W, T R[], int i){
 
 
 
-T Delta_Smear(T omega, T q[], T t_in[]){
+T Delta_Smear(T omega, PrecVec q, T t_in[]){
   
   T D;
   for(int i=0; i<D_Latt; i++){
     
-    //cout << "q[i]: " << q[i] << " K: " << K(omega, t_in[i], beta) << " t: " << t_in[i] << " omega: " << omega <<  endl;
+    //cout << "q[i]: " << q(i) << " K: " << K(omega, t_in[i], beta) << " t: " << t_in[i] << " omega: " << omega <<  endl;
     
-    D += q[i]*K(omega, t_in[i], beta);
+    D += q(i)*K(omega, t_in[i], beta);
     
   }
   
@@ -190,7 +196,7 @@ T Delta_Smear(T omega, T q[], T t_in[]){
   
 }
 
-
+// FINE FUNZIONI
 
 
 
@@ -200,9 +206,11 @@ int main(){
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
   mpfr_set_default_prec(P);
-  using PrecMatr= Matrix<T,Dynamic,Dynamic>;
-  using PrecVec = Matrix<T,Dynamic, 1>;
   PrecMatr W_Mat(D_Latt,D_Latt), Id(D_Latt, D_Latt), Id_bis(D_Latt, D_Latt);
+  PrecVec R(D_Latt);
+  
+
+
   //INPUT DATA
 
   //Input Correlatori
@@ -237,7 +245,7 @@ int main(){
 
   for(int i=1; i<D_Latt+1; i++){
     t_in[i-1] = i;
-    cout << "t_in[" << i-1 << "]" << t_in[i-1] << endl;
+    //cout << "t_in[" << i-1 << "]" << t_in[i-1] << endl;
   }
     
   //FINE INPUT DATA
@@ -246,9 +254,9 @@ int main(){
   
   
   //PLOT INTEGRANDI DI W E R IN FUNZIONE DI OMEGA
-  params_t params_Graph(0.2,0.1,beta,bar_omega);
+  params_t params_Graph(0.2,0.1,beta,Estar);
 
-  
+   
   
   FILE *Integrand_beha, *K_beha;
   char open_Integrand_beha[1024], open_K_beha[1024];
@@ -269,7 +277,7 @@ int main(){
   
   for(double i=0; i<100000; i++){
     
-    fprintf(Integrand_beha, "%lf " "%s\n", i/100, conv(Integrand_W(i/100, &params_Graph)).c_str());
+    //fprintf(Integrand_beha, "%lf " "%s\n", i/100, conv(Integrand_W(i/100, &params_Graph)).c_str());
     fprintf(K_beha, "%lf " "%s\n", i/100, conv(K(i/100,0.1, beta)).c_str());
     
   }
@@ -278,124 +286,47 @@ int main(){
   fclose(K_beha);
   //FINE PLOT INTEGRANDI DI W E R IN FUNZIONE DI OMEGA
   
+
+
+
+  // ************************ INIZIO METODO ******************************
   
   
-  
-  //INIZIO INTEGRAZIONE
-  
-  int workspace_size=10000000;
-  T** W = new T*[D_Latt];
+  //CALCOLO MATRICE W
+
   for(int i=0; i<D_Latt; i++){
     
-    W[i] = new T[D_Latt];
-    
-  }
-
-  T W_a[D_Latt][D_Latt];
-  
-  T R[D_Latt], R_An[D_Latt];;
-  
-  
-  
-  //T t_i=0.1, t_j=0.1;
-
-  
-  /*FILE *q_beha;
-    char open_q_beha[1024];
-  sprintf(open_q_beha, "Output/q_beha.out");
-
-  if ((q_beha = fopen(open_q_beha, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_q_beha);
-    exit(EXIT_FAILURE);
-  }
-  
-  for(int k=0; k<50; k++){
-  
-  */
-
-  
-
-
-
-  
-  
-  for(int i=0; i<D_Latt; i++){
-    
-    
-    
-      
-    gsl_integration_workspace *workspace=gsl_integration_workspace_alloc(workspace_size);
-    
-    
-    
-    gsl_function f; 
-    
-    
-    double abserr;
-    double start=0, epsabs=0,epsrel=1e-10;
     
     for(int j=0; j<D_Latt; j++){
       
-      
-      double res_temp;
-      params_t params(t_in[i], t_in[j], beta,bar_omega);
-      f.function=Integrand_W;
-      f.params=&params;
-      
-      
-      
-      //gsl_integration_qagiu(&f,start,epsabs,epsrel,workspace_size, workspace, &res_temp, &abserr);
-      
-      W[i][j] = res_temp;
-      W_Mat(i,j) = W_an(t_in[i], t_in[j], bar_omega);
-      cout << "W[" << t_in[i] << "][" << t_in[j] << "]=" << W[i][j] << endl;
-      cout << "Analitico ---> W[" << t_in[i] << "][" << t_in[j] << "]=" << W_a[i][j] << endl;
+      W_Mat(i,j) = W_an(t_in[i], t_in[j], Estar);
+      //cout << "Analitico ---> W[" << t_in[i] << "][" << t_in[j] << "]=" << W_Mat(i,j) << endl;
       
     }//j
     
     
-    
-    double res_temp2;
-    
-    t_glb_R = t_in[i];
-    params_t params_R(t_glb_R, beta,bar_omega);
-    f.function=Integrand_R;
-    f.params=&params_R;
-    //gsl_integration_qagiu(&f, start, epsabs,epsrel,workspace_size, workspace, &res_temp2, &abserr);
-    
-    R[i] = res_temp2;
-    R_An[i] = 1/(t_glb_R+1);
-    gsl_integration_workspace_free(workspace);
-    
-    //cout << "RES: " << res_temp2;
-    cout << "R[" << t_glb_R << "]=" << R[i] << endl;
-    cout << "Analitico --->R[" << t_glb_R << "]=" << R[i] << endl;
-    
+    if(Method_choice==1)R(i) = 1/(t_in[i])*exp(-E0*t_in[i]);
+    else if(Method_choice==0)R(i) = 1/t_in[i];
+      
+    cout << "R[" << t_in[i] << "]=" << R(i) << endl;
+	 
     
   }//i
   
-  //FINE INTEGRAZIONE
+  //FINE CALCOLO MATRICE W
+  
 
+  
   
   // INVERSIONE MATRICE W
-  
-  /*
-  for(int i=0; i<D_Latt; i++){
-    for(int j=0; j<D_Latt; j++){
-
-      W_Mat(i,j) = W_a[i][j];
-      //cout << "W[" << t_in[i] << "][" << t_in[j] << "]=" << W_Mat(i,j) << endl;
-      
-    }
-    }*/ 
   
   
   cout << "W_matrix: " << endl;
   FILE *W_out;
   char open_W_out[1024];
-
+  
   sprintf(open_W_out, "Output/WM_out.out");
-
+  
   if ((W_out = fopen(open_W_out, "w")) == NULL ){
     printf("Error opening the input file: %s\n",open_W_out);
     exit(EXIT_FAILURE);
@@ -414,14 +345,16 @@ int main(){
     
   } 
   
-
-  fclose(W_out);
+  //cout << "Elements: " << setprecision(1024) << W_Mat(1,1) << "   " << W_Mat(1,3) << "   " << W_Mat(30,30) << endl;
   
-  //cout << "SSS " << W_Mat.determinant() << endl;
+  
+  fclose(W_out);
+
+
   
   const auto Winv=W_Mat.inverse();
   
-  cout << "W_matrix_inverse: " << endl;
+  /*cout << "W_matrix_inverse: " << endl;
   for(int col=0; col<D_Latt; col++){
     for(int row=0; row < D_Latt ; row++){
       
@@ -431,58 +364,51 @@ int main(){
     
     cout << endl;
     
-  }
-  
-  T** Wm1 = new T*[D_Latt];
-  for(int i=0; i<D_Latt; i++){
-    
-    Wm1[i] = new T[D_Latt];
-    
-  }
-  for(int i =0; i<D_Latt; i++){
-    for(int  j=0; j<D_Latt; j++){
-      
-      Wm1[i][j] = Winv(i,j);
-      //cout << "Win[" << t_in[i] << "][" << t_in[j] << "]=" << Winv(i,j) << endl;
-    }
-  }
+    }*/
   
   //Id = ((Wm1*W_Mat)-Eigen::Identity(31,31)).norm();
   for(int i=0; i<D_Latt; i++){
     for(int j=0; j<D_Latt; j++){
       
-      cout << "Id: " << Id(i,j) << endl;
+      //cout << "Id: " << Id(i,j) << endl;
       
     }
   } 
   
   // FINE INVERSIONE MATRICE W
-  
-  
-  
-  
-  T q[D_Latt];
-  
-  
+
+
+  PrecVec f(D_Latt);
+  if(Method_choice==1){
+  //CALCOLO f
+
   for(int i=0; i<D_Latt; i++){
     
-    
-    q[i] = q_i(Wm1, R_An, i);
-    cout << q_i(Wm1, R_An, i) << endl;;
-    
+     f(i) = N(t_in[i])*D(t_in[i]);
+    cout << "f: " << f(i) << "  " << N(t_in[i]) << "  " << D(t_in[i]) <<  endl;
   }
   
-  /*
-    fprintf(q_beha, "%d " "%lf\n", k, q_i(W, R, 2).get_d());
-    
-    
-    }//k
-    
-    
-    fclose(q_beha);
-  */
+  // FINE CALCOLO f
+  }//if
+
   
-  
+  // CALCOLO g
+  T den =  R.transpose()*Winv*R;
+  PrecVec g;
+  if(Method_choice==1){
+    T numA = R.transpose()*Winv*f;
+    T num = 1-numA;
+    PrecVec g1 = Winv*f;
+    g=Winv*f+ Winv*R*num/den;
+  }
+  else if(Method_choice==0){
+    g=Winv*R/den;
+  }
+  // FINE CALCOLO g
+
+
+  for(int i=0; i<D_Latt; i++) cout << "g: " << g(i) << endl; 
+    
   FILE *q_t_out;
   char open_q_t_out[1024];
   
@@ -493,10 +419,10 @@ int main(){
     exit(EXIT_FAILURE);
   }
   
- 
+  
   for(int i=0; i<D_Latt; i++){
     
-    fprintf(q_t_out, "%lf " "%lf\n", t_in[i].get_d(), q[i].get_d());
+    fprintf(q_t_out, "%lf " "%lf\n", t_in[i].get_d(), g(i).get_d());
     
   }
   
@@ -517,16 +443,52 @@ int main(){
   
   
   
+  if(Method_choice==0) E0=0;
+  fprintf(Delta_S, "@type xy\n");
+  for(double i=0; i<300; i++){
 
-  
-  for(double i=0; i<100; i++){
-
-    fprintf(Delta_S, "%lf " "%lf\n", i/100, Delta_Smear(i/100, q, t_in).get_d());
+    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Delta_Smear(E0 + i/100, g, t_in).get_d());
     
   }
+
+  if(Method_choice==1){
+  fprintf(Delta_S, "\n \n @type xy \n");
+  
+  for(double i=0; i<300; i++){
+    
+    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Target_F(E0 + i/100).get_d());
+  }
+
+ 
+  fprintf(Delta_S, "\n \n @type xy \n");
+  for(double i=0; i<300; i++){
+    T df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
+    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, df.get_d());
+  }
+  
   
   fclose(Delta_S);
-  
+
+
+  FILE *Diff;
+  char open_Diff[1024];
+
+
+  sprintf(open_Diff, "Output/Diff.out");
+
+  if ((Diff = fopen(open_Diff, "w")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Diff);
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(Diff, "\n \n @type xy \n");
+  for(double i=0; i<300; i++){
+    T df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
+    fprintf(Diff, "%lf " "%lf\n", E0.get_d() +i/100, df.get_d());
+  }
+
+  fclose(Diff);
+  }
   return 0;
   
 }
