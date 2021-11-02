@@ -12,6 +12,21 @@
 #include "gmpfrxx.h" 
 #include <eigen3/Eigen/Dense>
 
+/////////////////////////////////////////                                   
+//SETTA LA PRECISIONE DESIDERATA IN BITS                                   
+const int P = 1024;
+
+struct Initer
+{
+  Initer()
+  {
+    mpfr_class::set_dprec(P);
+  }
+};
+
+Initer initer;
+/////////////////////////////////////////
+
 
 #define Pi 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
 
@@ -29,12 +44,12 @@ int K_choice = 1;
 // 0=BG, 1=Nazario
 int Method_choice = 0;
 
-
+/*
 /////////////////////////////////////////                                   
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
 const int P = 1024;
 /////////////////////////////////////////
-
+*/
 
 //Parameters of the computation
 T beta=10, Estar=0.5;
@@ -205,7 +220,7 @@ T Delta_Smear(T omega, PrecVec q, T t_in[]){
 int main(){
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
-  mpfr_set_default_prec(P);
+  mpfr_class::set_dprec(P);
   PrecMatr W_Mat(D_Latt,D_Latt), Id(D_Latt, D_Latt), Id_bis(D_Latt, D_Latt);
   PrecVec R(D_Latt);
   
@@ -345,7 +360,7 @@ int main(){
     
   } 
   
-  //cout << "Elements: " << setprecision(1024) << W_Mat(1,1) << "   " << W_Mat(1,3) << "   " << W_Mat(30,30) << endl;
+  cout << "Elements: " << setprecision(1024) << W_Mat(1,1) << "   " << W_Mat(1,3) << "   " << W_Mat(30,30) << endl;
   
   
   fclose(W_out);
