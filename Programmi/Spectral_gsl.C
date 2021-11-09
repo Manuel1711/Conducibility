@@ -14,7 +14,7 @@
 
 /////////////////////////////////////////                                   
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
-const int P = 1024;
+const int P = 512;
 
 struct Initer
 {
@@ -42,18 +42,12 @@ int K_choice = 1;
 
 //Scelta metodo
 // 0=BG, 1=Nazario
-int Method_choice = 0;
+int Method_choice = 1;
 
-/*
-/////////////////////////////////////////                                   
-//SETTA LA PRECISIONE DESIDERATA IN BITS                                   
-const int P = 1024;
-/////////////////////////////////////////
-*/
 
 //Parameters of the computation
 T beta=10, Estar=0.5;
-#define D_Latt 31
+#define D_Latt 16
 //Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
 T sigma=0.1;
 T E0=0.1;
@@ -220,11 +214,10 @@ T Delta_Smear(T omega, PrecVec q, T t_in[]){
 int main(){
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
-  mpfr_class::set_dprec(P);
   PrecMatr W_Mat(D_Latt,D_Latt), Id(D_Latt, D_Latt), Id_bis(D_Latt, D_Latt);
   PrecVec R(D_Latt);
   
-
+  
 
   //INPUT DATA
 
@@ -360,11 +353,10 @@ int main(){
     
   } 
   
-  cout << "Elements: " << setprecision(1024) << W_Mat(1,1) << "   " << W_Mat(1,3) << "   " << W_Mat(30,30) << endl;
   
   
   fclose(W_out);
-
+  
 
   
   const auto Winv=W_Mat.inverse();
@@ -503,7 +495,8 @@ int main(){
   }
 
   fclose(Diff);
-  }
+  }//if
+  
   return 0;
   
 }
