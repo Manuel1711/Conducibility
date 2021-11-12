@@ -2,6 +2,11 @@
 
 //g++ -o Spectral_gsl Spectral_gsl.C -O0 -I /usr/include/eigen3/ -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx -L/Users/manuel/Desktop/gmpfrxx  -g -Wall -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
 
+//g++ -o Spectral_gsl Spectral_gsl.C -O0 -I /usr/include/eigen3/ -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include/boost/ -L/usr/local/lib  -g -Wall -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
+
+//g++ -std=c++11 -o Spectral_gsl Spectral_gsl.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
+
+
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -9,8 +14,17 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
-#include "gmpfrxx.h" 
+#include "gmpfrxx.cpp" 
 #include <eigen3/Eigen/Dense>
+#include "mp.h"
+#include <boost/math/quadrature/gauss_kronrod.hpp>
+#include <boost/multiprecision/mpfr.hpp>
+
+namespace bm=boost::multiprecision;
+namespace bq=boost::math::quadrature;
+ 
+using Real=
+  bm::number<bm::mpfr_float_backend<128>>;
 
 /////////////////////////////////////////                                   
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
@@ -23,8 +37,17 @@ struct Initer
     mpfr_class::set_dprec(P);
   }
 };
-
+ 
 Initer initer;
+/////////////////////////////////////////
+
+
+/////////////////////////////////////////                                   
+//SETTA LIMITE INFERIORE E SUPERIORE INTEGRAZIONE NUMERICA
+const Real inf=
+  std::numeric_limits<Real>::infinity();
+const Real infLimit=0.23532;
+const Real supLimit=inf;			
 /////////////////////////////////////////
 
 
@@ -212,13 +235,16 @@ T Delta_Smear(T omega, PrecVec q, T t_in[]){
 
 
 int main(){
+
+  
+
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
   PrecMatr W_Mat(D_Latt,D_Latt), Id(D_Latt, D_Latt), Id_bis(D_Latt, D_Latt);
   PrecVec R(D_Latt);
   
   
-
+  
   //INPUT DATA
 
   //Input Correlatori

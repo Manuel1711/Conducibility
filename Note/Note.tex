@@ -52,14 +52,146 @@ In the following, we are going to describe the three methods applying them to di
 
 
 \section{Backus-Gilbert Method}
+
+The Backus-Gilbert method \cite{BG} has been introduced in the field of Geophysics in 1968  and then it has been applied also in other situations, such that astrophysics \cite{LoredoEpstein}. Recently, it has been used also in  \cite{Hansen}\cite{Brandt2015}\cite{Brandt2016}.\\
+The idea behind the BG method is as follows. What we want to do is to reconstruct the function $\rho(\omega)$ starting from a finite number of discrete values of $C(t_i)$. Then we seek a set of inverse response kernels $q_i(\bar{\omega})$ such that we can make an estimation $\hat{\rho}$ of our spectral function $\rho$ as a linear combination of the inputs $\{C_i\}$ 
+\begin{equation}
+\hat{\rho}(\bar{\omega}) = \sum_{t=t_{min}}^{t_{max}} q_t(\bar{\omega})C(t). 
+\end{equation}
+The idea of the method is that the coefficients are fixed in such a way the mapping between the estimator $\hat{\rho}$ and the true spectral function $\rho$ is as close as possible to the identity in the limit in which our data $C(t_i)$ is unaffected by errors. This relation can be mathematically written as
+\begin{equation}\label{Delta_est}
+\hat{\rho}(\bar{\omega}) = \int_0^\infty d\omega \rho(\omega)\Delta(\omega, \bar{\omega}),
+\end{equation}
+where $\Delta(\omega, \bar{\omega})$ is a resolution function that, clearly, in the ideal case is a Dirac delta. The goal is to minimize the width of $\Delta$ to obtain the best estimate of $\rho$. By comparing the two expression of $\hat{\rho}$ 
+\begin{equation}
+\hat{\rho}(\bar{\omega}) = \int_0^\infty d\omega \rho(\omega)\Delta(\omega, \bar{\omega}) = \sum_{t=t_{min}}^{t_{max}} q_t(\bar{\omega})C(t), 
+\end{equation}
+and recalling the \eqref{eq: CorrBasis},  we can easily extract the expression of the resolution function in terms of the coefficients $q_i$ and of the basis functions $K_T$ as 
+\begin{equation}\label{eq: res_sum}
+\Delta(\omega,\bar{\omega}) = \sum_{t=t_{min}}^{t_{max}} q_i(\bar{\omega}) K_T(\omega,t).
+\end{equation}
+We can require that these functions have unit area for each value of $\bar{\omega}$  by imposing the unit area constraint
+
+\begin{equation}\label{eq: UAConstraint}
+1 = \int_0^\infty d\bar{\omega} \Delta(\omega,\bar{\omega}) = \sum_{t=t_{min}}^{t_{max}} q_i(\bar{\omega})  \int_0^\infty d\bar{\omega}  K_T(\omega,t) = \textbf{q}\textbf{R}, 
+\end{equation}
+where we defined
+\begin{equation}
+R_t = \int_0^\infty d\bar{\omega}  K_T(\omega,t).
+\end{equation}
+It only remains to fix the coefficients $q_i$. As anticipated in \eqref{Delta_est}, we want to fix them in such a way the width of $\Delta(\omega,\bar{\omega})$ is as small as possible. Then, the idea is to minimize the following functional
+\begin{equation}
+A[q] = \int_0^\infty (\omega-\bar{\omega})^2(\Delta(\omega,\bar{\omega}))^2,
+\end{equation}
+which can be seen as the width of the function $\Delta(\omega,\bar{\omega})$. By substituting the \eqref{eq: res_sum} we can make explicit the dependence with respect the coefficients 
+\begin{equation}\begin{split}\label{eq: functBGWO}
+A[q] = & \int_0^\infty d\omega (\omega-\bar{\omega})^2 \big[ \sum_{t=t_{min}}^{t_{max}} q_t(\bar{\omega}) K_T(\omega,t) \big]^2 = \\ &  \sum_{t,r=t_{min}}^{t_{max}} q_t(\bar{\omega}) \bigg( \int_0^\infty  d\omega(\omega-\bar{\omega})^2 K_T(\omega, t) K_T(\omega, r) \bigg) q_r(\bar{\omega}) = \textbf{q}\textbf{W}\textbf{q}, 
+\end{split}\end{equation} 
+where we defined 
+\begin{equation}
+W_{tr}(\bar{\omega}) = \int_0^\infty d\omega (\omega-\bar{\omega})^2 K_T(\omega, t) K_T(\omega, r).
+\end{equation}
+Thus, what we want to do is to minimize the \eqref{eq: functBGWO} in presence of the constraint \eqref{eq: UAConstraint}. This can be done using the Lagrange multiplier method in such a way that this problem correspond to find the coefficients $q_i$ and $\mu$ that minimize 
+\begin{equation}
+A'[q, \mu] =  \textbf{q}\textbf{W}\textbf{q} + \mu \textbf{q}\textbf{R} - \mu.
+\end{equation}
+By making the derivative and imposing it to zero we find the the minimization relation
+\begin{equation}\label{eq: MinCondBG}
+\textbf{q}\textbf{W} + \textbf{W}\textbf{q} + \mu\textbf{R}  = 0.
+\end{equation}
+Being $\textbf{W}$ a symmetric and positive matrix we find
+\begin{equation}\label{eq: Demon}
+\textbf{q} = - \frac{\mu}{2} \textbf{W}^{-1}\textbf{R},
+\end{equation}
+By multiplying from the left by $R^T$, we can find the expression for the Lagrange multiplier 
+\begin{equation}
+\mu = -2(\textbf{R}^T \textbf{W}^{-1} \textbf{R})^{-1},
+\end{equation}
+that substituted back in \eqref{eq: Demon} gives the final result
+\begin{equation}\label{eq: BGCoeff}
+\textbf{q} = \frac{\textbf{W}^{-1}\textbf{R}}{\textbf{R}^T \textbf{W}^{-1} \textbf{R}}. 
+\end{equation}
+Note that if we don't impose the unit area constraint we obtain the trivial solution for which $q=0$ and then the smearing function whose width is minimized is the null function.
+
 \section{Hansen-Lupo-Tantalo Method}
+
+
+The only difference in this case is that we minimize a different functional, namely
+\begin{equation}\begin{split}\label{eq: NFunct}
+A_{HLT}[g] = & \int_0^\infty d\omega \big| \bar{\Delta}_\sigma(\bar{\omega}, \omega) - \Delta_\sigma(\bar{\omega}, \omega) \big|^2 = \\ & = \int_0^\infty d\omega \big| \sum_{t=t_{min}}^{t_{max}} q_t(\bar{\omega}) K_T(\omega,t) - \Delta_\sigma(\bar{\omega}, \omega) \big|^2 = \\ & = \sum_{t=t_{min}}^{t_{max}} \int_0^\infty d\omega \big| q_t(\bar{\omega}) K_T(\omega,t) -\Delta_\sigma(\bar{\omega}, \omega) \big|^2 = \\ & = \sum_{t,r=t_{min}}^{t_{max}} q_t(\bar{\omega}) \bigg( \int_0^\infty  d\omega K_T(\omega, t) K_T(\omega, r) \bigg)q_r(\bar{\omega}) + \\ & -2 \sum_{t=t_{min}}^{t_{max}} q_t(\bar{\omega}) \bigg( \int_0^\infty  d\omega K_T(\omega, t) \Delta_\sigma(\bar{\omega}, \omega) \bigg) + \int_0^\infty [\Delta_\sigma (\bar{\omega}, \omega)]^2 = \\ & = \textbf{q} W^{HLT} \textbf{q} - 2\textbf{q} \textbf{f} + \int_0^\infty [\Delta_\sigma (\bar{\omega}, \omega)]^2, 
+\end{split}\end{equation}
+where we defined, 
+\begin{equation}\begin{split}
+& W^{HLT}_{tr} = \int_0^\infty  d\omega K_T(\omega, t) K_T(\omega, r) \\ &  f_t = \int_0^\infty  d\omega K_T(\omega, t) \Delta_\sigma(\bar{\omega}, \omega).
+\end{split}\end{equation}
+We can now apply the same technique as before. In fact we want to minimize this functional imposing the unit area constraint on $\bar{\Delta}$ also in this case. Using the Lagrange multiplier we need to minimize the functional
+\begin{equation}
+A'_{HLT}[g] = \textbf{q} W^{HLT} \textbf{q} -2 \textbf{q} \textbf{f} + \int_0^\infty [\Delta_\sigma (\bar{\omega}, \omega)]^2 + \mu \textbf{q}\textbf{R} - \mu, 
+\end{equation}
+that lead to the condition
+\begin{equation}\label{eq: MinConNaz}
+2  W^{HLT}\textbf{q} - 2\textbf{f} + \mu \textbf{R}  = 0, 
+\end{equation}
+from which 
+\begin{equation}\label{eq: BUKNaz}
+\textbf{q} = \frac{1}{2}( W_{HLT}^{-1}2\textbf{f} - \mu  W_{HLT}^{-1}\textbf{R}). 
+\end{equation}
+We can extract $\mu$ also in this case by imposing the unit area condition 
+\begin{equation}
+1 = \frac{1}{2}(R^TW_{HLT}^{-1}2\textbf{f} - \mu R^T W_{HLT}^{-1}\textbf{R} ), 
+\end{equation}
+which gives
+\begin{equation}
+\mu  = -\frac{(2-  R^TW_{HLT}^{-1}2\textbf{f})}{R^T W_{HLT}^{-1}\textbf{R} }.
+\end{equation}
+By substituting we find 
+\begin{equation}\label{eq: CoeffN}
+\textbf{q} =  W^{-1}_{HLT} \textbf{f} +   \frac{1-W^{-1}_{HLT} \textbf{f}}{\textbf{R}^TW^{-1}_{HLT}\textbf{R}}W^{-1}_{HLT}\textbf{R}.
+\end{equation}
+We can observe that if we put $\textbf{f}=0$ we come back to a situation analogous to the \eqref{eq: BGCoeff} with, however, a different definition of $W$.\\
+From Eq. \eqref{eq: NFunct} we can see that in the limit in which
+\begin{equation}
+\Delta_\sigma(\bar{\omega}, \omega) = \bar{\Delta}_\sigma[1-(\omega-\bar{\omega})],
+\end{equation}
+we simply reduce to the BG case. In fact in this case 
+\begin{equation}\label{eq: fSub}
+\textbf{f} = \int_0^\infty d\omega K_T(\omega,t) \bar{\Delta}_\sigma[1-(\omega-\bar{\omega})] = \textbf{q}(W^{HLT}-T)
+\end{equation}
+where we defined
+\begin{equation}
+T = \int_0^\infty K_T(\omega,t)(\omega-\bar{\omega})K_T(\omega,t).
+\end{equation}
+By substituting in \eqref{eq: NFunct} we simply re-obtain 
+\begin{equation}\begin{split}
+A_{HLT}[g] & = \textbf{q} W^{HLT} \textbf{q} - 2\textbf{q} (W^{HLT}-T)\textbf{q}  + \textbf{q}W^{HLT}\textbf{q}  + \textbf{q}W\textbf{q} - 2\textbf{q} T \textbf{q}  \\ & = \textbf{q}W\textbf{q} = A[g].
+\end{split}\end{equation}
+
+Note that it's not possible from the \eqref{eq: CoeffN} to find back the \eqref{eq: BGCoeff} by simply making the substitution \eqref{eq: fSub}. In fact imposing the minimization condition \eqref{eq: MinConNaz} we lose the third term that we have in \eqref{eq: NFunct}, which is the one from which we can extract back $W$,  because in that case it does not depend from the coefficients $q$.\\
+A smarter way to proceed is to ignore the quadratic term that is not contributing in \eqref{eq: CoeffN}. In other words, the minimization of the functional \eqref{eq: NFunct} gives the same coefficient results of the minimization of the functional
+\begin{equation}\label{eq: NFunctNew}
+A'_{HLT}[g] = \int_0^\infty d\omega (\bar{\Delta}_\sigma^2(\bar{\omega}, \omega) - 2\bar{\Delta}_\sigma(\bar{\omega}, \omega)\Delta_\sigma(\bar{\omega}, \omega)) = \textbf{q} W^{HLT} \textbf{q} - 2\textbf{q} \textbf{f}.
+\end{equation}
+In this case the condition to come back to the BG is 
+\begin{equation}
+\Delta_\sigma = \frac{\bar{\Delta}_\sigma}{2}\big[1-(\omega-\bar{\omega})^2\big].
+\end{equation}
+In this way we have that
+\begin{equation}
+\textbf{f} = \frac{1}{2}\textbf{q}\big[W^{HLT} - W \big], 
+\end{equation}
+which substituted in the \eqref{eq: NFunctNew} gives back the BG functional. However, this is not the right way because also in this case the coefficients doesn't reduce to the BG ones. In fact these are the conditions that allow us to reduce to BG before we make the derivative. This condition changes after the differentiation. If we want that the coefficients of HLT reduce to the ones of BG we have to focus on the functional minimization \eqref{eq: MinConNaz} which is the one that directly leads to the expression of the coefficients. We should impose that the \eqref{eq: NFunctNew} reduces to \eqref{eq: MinCondBG}. The condition becomes 
+\begin{equation}
+\textbf{f} = (W^{HLT}-W)\textbf{q}.
+\end{equation}
+Obviously this substitution is valid in \eqref{eq: BUKNaz} because the normalization for the unitary constraint will be different, namely the expression of $\mu$ will change.
+
 \section{Tikhonov Regularization Method}
 
 
 \newpage
 \begin{thebibliography}{9}
 \bibitem{BG}
-G. Backus and F. Gilbert, Geophysical Journal Interna- tional 16, 169 (1968).
+G. Backus and F. Gilbert, Geophysical Journal International 16, 169 (1968).
 
 \bibitem{TR}
 A. N. Tikhonov, Soviet Math. Dokl. 4, 1035 (1963).
@@ -67,6 +199,20 @@ A. N. Tikhonov, Soviet Math. Dokl. 4, 1035 (1963).
 \bibitem{Nazario}
 M. Hansen, A. Lupo, and N. Tantalo, Phys. Rev. D99,
 094508 (2019), arXiv:1903.06476 [hep-lat].
+
+\bibitem{LoredoEpstein}
+Thomas J. Loredo, Richard I. Epstein,
+ R.I. 1989, Astrophysical Journal, vol. 336, pp. 896–919.
+
+\bibitem{Hansen}
+M. T. Hansen, H. B. Meyer and D. Robaina, Phys. Rev. D 96 (2017) no.9, 094513 doi:10.1103/PhysRevD.96.094513 [arXiv:1704.08993 [hep-lat]].
+
+\bibitem{Brandt2016}
+B. B. Brandt, A. Francis, B. J\"ager, and H. B. Meyer, Phys. Rev. D93, 054510 (2016), 1512.07249.
+
+
+\bibitem{Brandt2015}
+B. B. Brandt, A. Francis, H. B. Meyer, and D. Robaina, Phys. Rev. D92, 094510 (2015), 1506.05732.
 
 \end{thebibliography}
 
