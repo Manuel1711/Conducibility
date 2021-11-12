@@ -1,234 +1,20 @@
-//g++ -Wall -O0 -ggdb3 -lgmp -lgmpxx -std=c++11 -I/mnt/c/Users/navigl/Desktop/gsl/include -o Spectral_gsl Spectral_gsl.C `gsl-config --cflags --libs`
-
-//g++ -o Spectral_gsl Spectral_gsl.C -O0 -I /usr/include/eigen3/ -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx -L/Users/manuel/Desktop/gmpfrxx  -g -Wall -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
-
-//g++ -o Spectral_gsl Spectral_gsl.C -O0 -I /usr/include/eigen3/ -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include/boost/ -L/usr/local/lib  -g -Wall -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
-
 //g++ -std=c++11 -o Spectral_gsl Spectral_gsl.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
 
 
 #include <fstream>
 #include <iostream>
 #include <math.h>
-#include <gsl/gsl_integration.h>
 #include <sstream>
-#include <vector>
 #include <cmath>
-#include "gmpfrxx.cpp" 
-#include <eigen3/Eigen/Dense>
 #include "mp.h"
-#include <boost/math/quadrature/gauss_kronrod.hpp>
-#include <boost/multiprecision/mpfr.hpp>
-
-namespace bm=boost::multiprecision;
-namespace bq=boost::math::quadrature;
- 
-using Real=
-  bm::number<bm::mpfr_float_backend<128>>;
-
-/////////////////////////////////////////                                   
-//SETTA LA PRECISIONE DESIDERATA IN BITS                                   
-const int P = 512;
-
-struct Initer
-{
-  Initer()
-  {
-    mpfr_class::set_dprec(P);
-  }
-};
- 
-Initer initer;
-/////////////////////////////////////////
-
-
-/////////////////////////////////////////                                   
-//SETTA LIMITE INFERIORE E SUPERIORE INTEGRAZIONE NUMERICA
-const Real inf=
-  std::numeric_limits<Real>::infinity();
-const Real infLimit=0.23532;
-const Real supLimit=inf;			
-/////////////////////////////////////////
-
-
-#define Pi 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
-
-using namespace std;
-using namespace Eigen;
-using T=mpfr_class;
-
-using PrecMatr= Matrix<T,Dynamic,Dynamic>;
-using PrecVec = Matrix<T,Dynamic, 1>;
- 
-
-int K_choice = 1;
-
-//Scelta metodo
-// 0=BG, 1=Nazario
-int Method_choice = 1;
-
-
-//Parameters of the computation
-T beta=10, Estar=0.5;
-#define D_Latt 16
-//Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
-T sigma=0.1;
-T E0=0.1;
-T alpha=0;
-////////////////////////////////////////
-
+#include "smear.h"
 
 /////////////////////////////////////////
 //GLOBAL QUANTITIES
-
 T Corr[10], t_in[D_Latt];
 T t_glb_R;
-
-
 /////////////////////////////////////////
 
-struct params_t{
-  
-  T t_i;
-  T t_j;
-  T t;
-  T beta;
-  T bar_omega;
-params_t(T t_i, T t_j, T beta, T bar_omega) : t_i(t_i), t_j(t_j), beta(beta), bar_omega(bar_omega) {}
-params_t(T t, T beta, T bar_omega) : t(t), beta(beta), bar_omega(bar_omega) {}
-  
-  
-};
-
-
-
-//INIZIO FUNZIONI
-
-
-string conv(const mpfr_class& in)
-{
-  ostringstream os;
-  os.precision(mpf_get_default_prec()/4);
-  
-  os<<in;
-
-  return os.str();
-}
-
-mpfr_class conv(const string& in)
-{
-  istringstream is(in);
-
-  mpfr_class out;
-
-  is>>out;
-
-  return out;
-}
-
-
-
-T Z(){
-
-  return (1+erf(Estar/(sqrt(2)*sigma)))/2;
-  
-}
-
-
-T Target_F(T E){
-  
-   return exp(-pow(E-Estar,2)/(2*sigma*sigma))/(sqrt(2*Pi)*sigma*Z());
-  
-}
-
-T W_an(T ti, T tj, T Estar){
-  
-  //return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/(pow(ti+tj,3));
-  if(Method_choice==1) return exp(-(ti+tj-alpha)*E0)/(ti+tj-alpha);
-  else if(Method_choice==0) return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/pow(ti+tj,3);
-}
-
-
-
-
-T N(T t){
-  
-  //cout << " N: " << 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2) << endl;
-  return 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2);
-}
-
-T D(T t){
-  
-  cout << "D: " << 1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) << " erf: " << erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) <<"   " << (alpha-t)*pow(sigma,2)+Estar-E0   << endl;
-  return  1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)); 
-  
-}
-
-
-T K(T omega, T t, T beta){
-  
-  
-  T ret;
-  
-  if(K_choice == 1){
-    
-    ret= exp(-omega*t); //+ exp(-(beta-t)*omega);
-    
-  }
-  
-  else if(K_choice == 0){
-    
-    T A=cosh(omega*(t - beta/2));
-    T B=sinh(beta*omega/2);
-    ret = A/B*omega;
-    
-  }
-
-  
-  return ret; //Aggiunta f(\omega)=\omega necessaria per regolarizzazione in \omega=0
-}
-
-
-
-
-T q_i(T **W, T R[], int i){
-  
-  T N=0, D=0;
-  for(int j=0; j<D_Latt; j++){
-    
-    N += W[i][j]*R[j];
-    
-    
-    
-    for(int k=0; k<D_Latt; k++){
-      
-      D += R[k]*W[k][j]*R[j];
-      
-    }
-  }
-  
-  return N/D;
-
-}
-
-
-
-T Delta_Smear(T omega, PrecVec q, T t_in[]){
-  
-  T D;
-  for(int i=0; i<D_Latt; i++){
-    
-    //cout << "q[i]: " << q(i) << " K: " << K(omega, t_in[i], beta) << " t: " << t_in[i] << " omega: " << omega <<  endl;
-    
-    D += q(i)*K(omega, t_in[i], beta);
-    
-  }
-  
-  return D;
-  
-}
-
-// FINE FUNZIONI
 
 
 
@@ -339,9 +125,14 @@ int main(){
     }//j
     
     
-    if(Method_choice==1)R(i) = 1/(t_in[i])*exp(-E0*t_in[i]);
-    else if(Method_choice==0)R(i) = 1/t_in[i];
-      
+#if defined(HLN)
+    R(i) = 1/(t_in[i])*exp(-E0*t_in[i]);
+#endif
+
+#if defined(BG)
+    R(i) = 1/t_in[i];
+#endif
+    
     cout << "R[" << t_in[i] << "]=" << R(i) << endl;
 	 
     
@@ -412,7 +203,7 @@ int main(){
 
 
   PrecVec f(D_Latt);
-  if(Method_choice==1){
+#if defined(HLN)
   //CALCOLO f
 
   for(int i=0; i<D_Latt; i++){
@@ -422,21 +213,21 @@ int main(){
   }
   
   // FINE CALCOLO f
-  }//if
-
+#endif
   
   // CALCOLO g
   T den =  R.transpose()*Winv*R;
   PrecVec g;
-  if(Method_choice==1){
-    T numA = R.transpose()*Winv*f;
-    T num = 1-numA;
-    PrecVec g1 = Winv*f;
-    g=Winv*f+ Winv*R*num/den;
-  }
-  else if(Method_choice==0){
-    g=Winv*R/den;
-  }
+#if defined(HLN)
+  T numA = R.transpose()*Winv*f;
+  T num = 1-numA;
+  PrecVec g1 = Winv*f;
+  g=Winv*f+ Winv*R*num/den;
+#endif
+  
+#if defined(BG)
+  g=Winv*R/den;
+#endif
   // FINE CALCOLO g
 
 
@@ -476,22 +267,24 @@ int main(){
   
   
   
-  if(Method_choice==0) E0=0;
+#if defined(BG)
+    E0=0;
+#endif
   fprintf(Delta_S, "@type xy\n");
   for(double i=0; i<300; i++){
 
     fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Delta_Smear(E0 + i/100, g, t_in).get_d());
     
   }
-
-  if(Method_choice==1){
+  
+#if defined(HLN)
   fprintf(Delta_S, "\n \n @type xy \n");
   
   for(double i=0; i<300; i++){
     
     fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Target_F(E0 + i/100).get_d());
   }
-
+  
  
   fprintf(Delta_S, "\n \n @type xy \n");
   for(double i=0; i<300; i++){
@@ -521,8 +314,8 @@ int main(){
   }
 
   fclose(Diff);
-  }//if
+#endif
   
   return 0;
-  
+   
 }
