@@ -11,23 +11,20 @@
 
 /////////////////////////////////////////
 //GLOBAL QUANTITIES
-T Corr[10], t_in[D_Latt];
-T t_glb_R;
+Real Corr[10], t_in[tmax];
+Real t_glb_R;
 /////////////////////////////////////////
 
 
-
-
-
-
 int main(){
-
   
-
+  cout << R_NInt(infLimit, supLimit, 3) << endl;
+  cout << W_NInt(infLimit, supLimit, 3, 2) << endl;
+  cout << f_NInt(infLimit, supLimit, 3) << endl;     
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
-  PrecMatr W_Mat(D_Latt,D_Latt), Id(D_Latt, D_Latt), Id_bis(D_Latt, D_Latt);
-  PrecVec R(D_Latt);
+  PrecMatr W_Mat(tmax,tmax), Id(tmax, tmax), Id_bis(tmax, tmax);
+  PrecVec R(tmax);
   
   
   
@@ -45,10 +42,10 @@ int main(){
   }
   
   
-
+  
   double trash1, trash2;
   char trash3[1024];
-  for(int i=0; i<D_Latt; i++){
+  for(int i=0; i<tmax; i++){
     
     fscanf(Correlators_Inputs, "%lf " "%s " "%lf\n", &trash1, trash3, &trash2);
     //t_in[i] = trash1;
@@ -63,7 +60,7 @@ int main(){
 
   //Binnaggio t_in
 
-  for(int i=1; i<D_Latt+1; i++){
+  for(int i=1; i<tmax+1; i++){
     t_in[i-1] = i;
     //cout << "t_in[" << i-1 << "]" << t_in[i-1] << endl;
   }
@@ -108,29 +105,38 @@ int main(){
   
 
 
-
+  
   // ************************ INIZIO METODO ******************************
   
   
-  //CALCOLO MATRICE W
+  //CALCOLO MATRICE W E VETTORE R
+  
+  for(int i=0; i<tmax; i++){
+    for(int j=0; j<tmax; j++){
 
-  for(int i=0; i<D_Latt; i++){
-    
-    
-    for(int j=0; j<D_Latt; j++){
-      
-      W_Mat(i,j) = W_an(t_in[i], t_in[j], Estar);
-      //cout << "Analitico ---> W[" << t_in[i] << "][" << t_in[j] << "]=" << W_Mat(i,j) << endl;
+#if defined(EXP)
+      W_Mat(i,j) = W_an_exp(t_in[i], t_in[j], Estar);
+#endif
+#if defined(COS)
+      W_Mat(i,j) = W_NInt(infLimit, supLimit, t_in[i], t_in[j]);
+#endif
+      cout << "W[" << t_in[i] << "][" << t_in[j] << "]=" << W_Mat(i,j) << endl;
       
     }//j
     
     
+    //Calcolo vettore R
 #if defined(HLN)
     R(i) = 1/(t_in[i])*exp(-E0*t_in[i]);
 #endif
-
+    
 #if defined(BG)
+#if defined(EXP)
     R(i) = 1/t_in[i];
+#endif
+#if defined(COS)
+    R(i) = R_NInt(infLimit, supLimit, t_in[i]);
+#endif
 #endif
     
     cout << "R[" << t_in[i] << "]=" << R(i) << endl;
@@ -138,89 +144,48 @@ int main(){
     
   }//i
   
-  //FINE CALCOLO MATRICE W
+  
   
 
   
   
   // INVERSIONE MATRICE W
   
-  
-  cout << "W_matrix: " << endl;
-  FILE *W_out;
-  char open_W_out[1024];
-  
-  sprintf(open_W_out, "Output/WM_out.out");
-  
-  if ((W_out = fopen(open_W_out, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_W_out);
-    exit(EXIT_FAILURE);
-  }
-  
-  for(int col=0; col<D_Latt; col++){
-    for(int row=0; row < D_Latt ; row++){
-      
-      fprintf(W_out, "%lf ", W_Mat(col,row).get_d());
-      cout << W_Mat(col,row) << "  ";
-      
-    }
-
-    fprintf(W_out, "\n");
-    cout << endl;
-    
-  } 
-  
-  
-  
-  fclose(W_out);
-  
-
-  
   const auto Winv=W_Mat.inverse();
   
-  /*cout << "W_matrix_inverse: " << endl;
-  for(int col=0; col<D_Latt; col++){
-    for(int row=0; row < D_Latt ; row++){
-      
-      cout << Winv(col,row) << "  ";
-      
-    }
-    
-    cout << endl;
-    
-    }*/
-  
   //Id = ((Wm1*W_Mat)-Eigen::Identity(31,31)).norm();
-  for(int i=0; i<D_Latt; i++){
-    for(int j=0; j<D_Latt; j++){
+  for(int i=0; i<tmax; i++){
+    for(int j=0; j<tmax; j++){
       
       //cout << "Id: " << Id(i,j) << endl;
       
     }
   } 
-  
   // FINE INVERSIONE MATRICE W
-
-
-  PrecVec f(D_Latt);
-#if defined(HLN)
+  
+  
   //CALCOLO f
-
-  for(int i=0; i<D_Latt; i++){
-    
-     f(i) = N(t_in[i])*D(t_in[i]);
-    cout << "f: " << f(i) << "  " << N(t_in[i]) << "  " << D(t_in[i]) <<  endl;
-  }
-  
-  // FINE CALCOLO f
+  PrecVec f(tmax);
+#if defined(HLN)
+  for(int i=0; i<tmax; i++){
+#if defined(EXP)
+    f(i) = N(t_in[i])*D(t_in[i]);
 #endif
-  
+#if defined(COS)
+    f(i) = f_NInt(infLimit, supLimit,t_in[i]);
+#endif
+    cout << "f: " << f(i) << endl;
+  }
+#endif
+  // FINE CALCOLO f
+ 
+
   // CALCOLO g
-  T den =  R.transpose()*Winv*R;
+  Real den =  R.transpose()*Winv*R;
   PrecVec g;
 #if defined(HLN)
-  T numA = R.transpose()*Winv*f;
-  T num = 1-numA;
+  Real numA = R.transpose()*Winv*f;
+  Real num = 1-numA;
   PrecVec g1 = Winv*f;
   g=Winv*f+ Winv*R*num/den;
 #endif
@@ -231,7 +196,8 @@ int main(){
   // FINE CALCOLO g
 
 
-  for(int i=0; i<D_Latt; i++) cout << "g: " << g(i) << endl; 
+  //Output coefficienti
+  for(int i=0; i<tmax; i++) cout << "g: " << g(i) << endl; 
     
   FILE *q_t_out;
   char open_q_t_out[1024];
@@ -244,9 +210,9 @@ int main(){
   }
   
   
-  for(int i=0; i<D_Latt; i++){
+  for(int i=0; i<tmax; i++){
     
-    fprintf(q_t_out, "%lf " "%lf\n", t_in[i].get_d(), g(i).get_d());
+    fprintf(q_t_out, "%s " "%s\n", conv(t_in[i]).c_str(), conv(g(i)).c_str());
     
   }
   
@@ -254,7 +220,8 @@ int main(){
   fclose(q_t_out);
   
   
-  
+
+  //Output funzione di smearing
   FILE *Delta_S;
   char open_Delta_S[1024];
   
@@ -266,56 +233,57 @@ int main(){
   }
   
   
-  
 #if defined(BG)
     E0=0;
 #endif
-  fprintf(Delta_S, "@type xy\n");
-  for(double i=0; i<300; i++){
+    fprintf(Delta_S, "@type xy\n");
+    for(double i=0; i<300; i++){
 
-    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Delta_Smear(E0 + i/100, g, t_in).get_d());
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(Delta_Smear(E0 + i/100, g, t_in)).c_str());
+      
+    }
     
-  }
-  
 #if defined(HLN)
-  fprintf(Delta_S, "\n \n @type xy \n");
-  
-  for(double i=0; i<300; i++){
+    fprintf(Delta_S, "\n \n @type xy \n");
     
-    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, Target_F(E0 + i/100).get_d());
-  }
+    for(double i=0; i<300; i++){
+      
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(Target_F(E0 + i/100)).c_str());
+    }
   
- 
-  fprintf(Delta_S, "\n \n @type xy \n");
-  for(double i=0; i<300; i++){
-    T df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
-    fprintf(Delta_S, "%lf " "%lf\n", E0.get_d() +i/100, df.get_d());
-  }
-  
-  
-  fclose(Delta_S);
-
-
-  FILE *Diff;
-  char open_Diff[1024];
-
-
-  sprintf(open_Diff, "Output/Diff.out");
-
-  if ((Diff = fopen(open_Diff, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_Diff);
-    exit(EXIT_FAILURE);
-  }
-
-  fprintf(Diff, "\n \n @type xy \n");
-  for(double i=0; i<300; i++){
-    T df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
-    fprintf(Diff, "%lf " "%lf\n", E0.get_d() +i/100, df.get_d());
-  }
-
-  fclose(Diff);
+    
+    fprintf(Delta_S, "\n \n @type xy \n");
+    for(double i=0; i<300; i++){
+      Real df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(df).c_str());
+    }
+    
+    
+    fclose(Delta_S);
+    
+    
+    //Output differenza target/HLN
+    FILE *Diff;
+    char open_Diff[1024];
+    
+    
+    sprintf(open_Diff, "Output/Diff.out");
+    
+    if ((Diff = fopen(open_Diff, "w")) == NULL ){
+      printf("Error opening the input file: %s\n",open_Diff);
+      exit(EXIT_FAILURE);
+    }
+    
+    fprintf(Diff, "\n \n @type xy \n");
+    for(double i=0; i<300; i++){
+      Real df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
+      fprintf(Diff, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(df).c_str());
+    }
+    
+    fclose(Diff);
 #endif
-  
-  return 0;
+
+    
+    return 0;
    
 }

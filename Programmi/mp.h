@@ -1,5 +1,6 @@
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <boost/multiprecision/mpfr.hpp>
+#include <boost/multiprecision/gmp.hpp>
 #include "gmpfrxx.cpp" 
 #include <eigen3/Eigen/Dense>
 #include <vector>
@@ -10,9 +11,6 @@ using namespace std;
 using namespace Eigen;
 using T=mpfr_class;
 
-using PrecMatr= Matrix<T,Dynamic,Dynamic>;
-using PrecVec = Matrix<T,Dynamic, 1>;
- 
 
 namespace bm=boost::multiprecision;
 namespace bq=boost::math::quadrature;
@@ -23,8 +21,11 @@ const Real inf=
   std::numeric_limits<Real>::infinity();
 
 
+using PrecMatr= Matrix<Real,Dynamic,Dynamic>;
+using PrecVec = Matrix<Real,Dynamic, 1>;
 
-string conv(const mpfr_class& in)
+
+string conv(const Real& in)
 {
   ostringstream os;
   os.precision(mpf_get_default_prec()/4);
@@ -34,11 +35,11 @@ string conv(const mpfr_class& in)
   return os.str();
 }
 
-mpfr_class conv(const string& in)
+Real conv(const string& in)
 {
   istringstream is(in);
 
-  mpfr_class out;
+  Real out;
 
   is>>out;
 
