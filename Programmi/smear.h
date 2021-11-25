@@ -1,46 +1,38 @@
 #include "pars.h"
 
+Real Z( Real s, Real Es){
 
-Real Z(){
-
-  return (1+erf(Estar/(sqrt(2)*sigma)))/2;
+  return (1+erf(Es/(sqrt(2)*s)))/2;
   
 }
 
 
-Real Target_F(Real E){
+Real Target_F(Real E, Real Es, Real s){
   
-   return exp(-pow(E-Estar,2)/(2*sigma*sigma))/(sqrt(2*Pi)*sigma*Z());
+  return exp(-pow(E-Es,2)/(2*s*s))/(sqrt(2*Pi)*s*Z(s,Es));
   
 }
 
-Real W_an_exp(Real ti, Real tj, Real Estar){
+Real W_an_exp(Real ti, Real tj, Real Es){
   
-  //return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/(pow(ti+tj,3));
 #if defined(HLN)
   return exp(-(ti+tj-alpha)*E0)/(ti+tj-alpha);
 #endif
 #if defined(BG)
-  return -(-2+2*Estar*(ti+tj)-pow(Estar,2)*pow(ti+tj,2))/pow(ti+tj,3);
+  return -(-2+2*Es*(ti+tj)-pow(Es,2)*pow(ti+tj,2))/pow(ti+tj,3);
 #endif
 }
 
 
 
 
-Real N(Real t){
-  
-  //cout << " N: " << 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2) << endl;
-  return 1/(2*Z())*exp(((alpha-t)*((alpha-t)*pow(sigma,2)+2*Estar))/2);
+Real N(Real t, Real s, Real Es){
+  return 1/(2*Z(s,Es))*exp(((alpha-t)*((alpha-t)*pow(s,2)+2*Es))/2);
 }
 
-Real D(Real t){
-  
-  cout << "D: " << 1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) << " erf: " << erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)) <<"   " << (alpha-t)*pow(sigma,2)+Estar-E0   << endl;
-  return  1+erf(((alpha-t)*pow(sigma,2)+Estar-E0)/(sqrt(2)*sigma)); 
-  
+Real D(Real t, Real s, Real Es){
+  return  1+erf(((alpha-t)*pow(s,2)+Es-E0)/(sqrt(2)*s)); 
 }
-
 
 Real K(Real omega, Real t, Real beta){
   
@@ -52,54 +44,88 @@ Real K(Real omega, Real t, Real beta){
     ret= exp(-omega*t); //+ exp(-(beta-t)*omega);
     
 #endif
-  
+    
 #if defined(COS)
     
     Real A=cosh(omega*(t - beta/2));
     Real B=sinh(beta*omega/2);
-    ret = A/B;
+    ret = A/B*omega; 
     
 #endif
-  
-  return ret;
+     
+    return ret;
 }
 
-  
 
-Real q_i(Real **W, Real R[], int i){
+
+
+Real f_NInt(Real infLimit, Real supLimit, Real ti, Real s, Real Es){
   
-  Real N=0, D=0;
-  for(int j=0; j<tmax; j++){
-    
-    N += W[i][j]*R[j];
-    
-    
-    
-    for(int k=0; k<tmax; k++){
-      
-      D += R[k]*W[k][j]*R[j];
-      
-    }
+  const auto f_cs=
+    [=](const Real& E) -> Real
+    { 
+     return K(E, ti, beta)*Target_F(E,Es, s);
+    };
+  return
+    bq::gauss_kronrod<Real,61>::integrate(f_cs,infLimit,supLimit,5,1e-16);
+  
+}
+
+
+
+
+PrecVec f_func(Real t_a[], Real s, Real Es){
+  
+  PrecVec f(Nt);
+  
+  for(int i=0; i<Nt; i++){
+#if defined(EXP)
+    f(i) = N(t_a[i], s, Es)*D(t_a[i], s, Es);
+#endif
+#if defined(COS)
+    f(i) = f_NInt(infLimit, supLimit,t_a[i], s, Es);
+#endif
+    //cout << "f: " << f(i) << endl;
   }
+
+  return f;
   
-  return N/D;
+}
+
+ 
+
+
+PrecVec Coeff(PrecVec R, PrecMatr Winv, PrecVec f){
+  
+  Real den =  R.transpose()*Winv*R;
+  //cout << "den: " << den << endl;
+  PrecVec g;
+  
+
+#if defined(HLN)
+  Real numA = R.transpose()*Winv*f;
+  Real num = 1-numA;
+  PrecVec g1 = Winv*f;
+  return Winv*f+ Winv*R*num/den;
+#endif
+
+  
+#if defined(BG)
+  return Winv*R/den;
+#endif
 
 }
+
+
 
 
 
 Real Delta_Smear(Real omega, PrecVec q, Real t_in[]){
   
   Real D;
-  for(int i=0; i<tmax; i++){
-    
-    //cout << "q[i]: " << q(i) << " K: " << K(omega, t_in[i], beta) << " t: " << t_in[i] << " omega: " << omega <<  endl;
-    
+  for(int i=0; i<Nt; i++)
     D += q(i)*K(omega, t_in[i], beta);
-    //cout << "D: " << q(i) << "  " << K(omega, t_in[i], beta) << "  " << exp(-omega*t_in[i]) << "  " <<  q(i)*K(omega, t_in[i], beta) << endl;
-    
-  }
-
+  
   return D;
   
 }
@@ -121,13 +147,13 @@ Real R_NInt(Real infLimit, Real supLimit, Real ti){
 }
 
 
-Real W_NInt(Real infLimit, Real supLimit, Real ti, Real tj){
+Real W_NInt(Real infLimit, Real supLimit, Real ti, Real tj, Real Es){
 
   const auto f_cs=
     [=](const Real& E) -> Real
     {
 #if defined(BG)
-     return K(E, ti, beta)*(E - Estar)*(E - Estar)*K(E,tj,beta);
+     return K(E, ti, beta)*(E - Es)*(E - Es)*K(E,tj,beta);
 #endif
 #if defined(HLN)
      return K(E, ti, beta)*K(E,tj,beta);
@@ -141,15 +167,58 @@ Real W_NInt(Real infLimit, Real supLimit, Real ti, Real tj){
 
 
 
-Real f_NInt(Real infLimit, Real supLimit, Real ti){
+
+
+Real rho_NInt(Real infLimit, Real supLimit, Real Es, Real s){
   
   const auto f_cs=
     [=](const Real& E) -> Real
     { 
-     return K(E, ti, beta)*Target_F(E);
+     return Es*exp(-E)*Target_F(E,Es,s)/E;
     };
 
   return
     bq::gauss_kronrod<Real,61>::integrate(f_cs,infLimit,supLimit,5,1e-16);
   
 }
+
+
+
+Real spectral(PrecVec q, PrecVec C){
+
+  Real rho=0;
+  for(int i=0; i<Nt; i++){
+#if defined(EXP)
+    rho += q(i)*C(i);
+#endif
+#if defined(COS)
+    rho += q(i)*C(i);
+    cout << "q: " << q(i) << "  C: " << C(i) << "  " << q(i)*C(i) << "  " << rho << endl;
+    cout << "PROD: " << q.transpose()*C << endl;
+#endif
+  }
+   
+  return rho;
+  
+}
+
+
+
+
+void delta_sigma_procedure(Real delta_sigma, Real Es, Real t_a[], PrecVec R, PrecMatr Winv){
+  
+  Real LHS = abs(delta_sigma-1);
+  Real sigma_f = 0.00001;
+  Real step = 0.0001;
+  cout << "LHS: " << LHS << endl;
+  
+  while(abs(LHS-Delta_Smear(Es, Coeff(R,Winv,f_func(t_a, sigma_f, Es)), t_a)/Target_F(Es, Es, sigma_f)) > 10*step){
+    sigma_f += step;
+    cout << "Diff: " << LHS - Delta_Smear(Es, Coeff(R,Winv,f_func(t_a, sigma_f, Es)), t_a)/Target_F(Es, Es, sigma_f) << "  Sigma: " << sigma_f << endl;
+  }
+  cout << "Sigma Finale: " << sigma_f << endl;
+  
+}
+
+
+

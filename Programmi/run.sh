@@ -14,7 +14,7 @@ PATH=$PATH:/Users/manuel/Documents/GitHub/Conducibility/Programmi/
 optimization="0 -g"
 
 boolM=1
-boolB=1
+boolB=0
 #declared="-D ABAB"
 
 if [ $boolM -eq 0 ]
@@ -37,7 +37,6 @@ if [ $boolB -eq 1 ]
 then
     Basis="-D COS"
 fi
-
 
 
 

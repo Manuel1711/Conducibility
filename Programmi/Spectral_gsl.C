@@ -1,6 +1,3 @@
-//g++ -std=c++11 -o Spectral_gsl Spectral_gsl.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas
-
-
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -11,22 +8,18 @@
 
 /////////////////////////////////////////
 //GLOBAL QUANTITIES
-Real Corr[10], t_in[tmax];
-Real t_glb_R;
+Real t_in[Nt], t_a[Nt];
 /////////////////////////////////////////
 
 
 int main(){
   
-  cout << R_NInt(infLimit, supLimit, 3) << endl;
-  cout << W_NInt(infLimit, supLimit, 3, 2) << endl;
-  cout << f_NInt(infLimit, supLimit, 3) << endl;     
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
-  PrecMatr W_Mat(tmax,tmax), Id(tmax, tmax), Id_bis(tmax, tmax);
-  PrecVec R(tmax);
+  PrecMatr W_Mat(Nt,Nt), Id(Nt, Nt), Id_bis(Nt, Nt);
+  PrecVec R(Nt), Corr(Nt);
   
-  
+   
   
   //INPUT DATA
 
@@ -45,12 +38,12 @@ int main(){
   
   double trash1, trash2;
   char trash3[1024];
-  for(int i=0; i<tmax; i++){
+  for(int i=0; i<Nt; i++){
     
     fscanf(Correlators_Inputs, "%lf " "%s " "%lf\n", &trash1, trash3, &trash2);
     //t_in[i] = trash1;
-    Corr[i] = conv(trash3);
-    cout  <<  " Corr[" << i << "]=" << Corr[i] << endl; 
+    Corr(i) = conv(trash3);
+    cout  <<  " Corr[" << i << "]=" << Corr(i) << endl; 
     
   }
   
@@ -59,21 +52,46 @@ int main(){
 
 
   //Binnaggio t_in
-
-  for(int i=1; i<tmax+1; i++){
-    t_in[i-1] = i;
-    //cout << "t_in[" << i-1 << "]" << t_in[i-1] << endl;
-  }
+  cout << "beta: " << beta << endl;
+  for(int i=tmin; i<=tmax; i++){
+    t_in[i-tmin] = i;
+    t_a[i-tmin] = i;
+    cout << "t_in[" << i-tmin << "]" << t_in[i-tmin] << endl;
+    cout << "t_a[" << i-tmin << "]" << t_a[i-tmin] << endl;
     
+  }
+  
+  
   //FINE INPUT DATA
   
+  
+
+  // TRY
+  
+  PrecVec Corr_try(Nt);
+  for(int i=0; i<Nt; i++){
+    const auto f_try=
+      [=](const Real& E) -> Real
+      { 
+#if defined(EXP)
+       return exp(-E)*K(E, t_in[i], beta);
+#endif
+#if defined(COS)
+       return exp(-E)*K(E, t_in[i], beta)/E;  
+#endif
+      };
+    
+    Corr_try(i)=
+      bq::gauss_kronrod<Real,61>::integrate(f_try,infLimit,supLimit,5,1e-16);
+    cout << "Try: " << Corr_try(i) << endl;
+  }
   
   
   
   //PLOT INTEGRANDI DI W E R IN FUNZIONE DI OMEGA
-  params_t params_Graph(0.2,0.1,beta,Estar);
-
-   
+  //params_t params_Graph(0.00988*2,0.00988*3,0.988,Estar);
+  
+  
   
   FILE *Integrand_beha, *K_beha;
   char open_Integrand_beha[1024], open_K_beha[1024];
@@ -95,7 +113,7 @@ int main(){
   for(double i=0; i<100000; i++){
     
     //fprintf(Integrand_beha, "%lf " "%s\n", i/100, conv(Integrand_W(i/100, &params_Graph)).c_str());
-    fprintf(K_beha, "%lf " "%s\n", i/100, conv(K(i/100,0.1, beta)).c_str());
+    fprintf(K_beha, "%lf " "%s\n", i/100, conv(K(i/100,0.00988*2, 0.00988*10)).c_str());
     
   }
 
@@ -103,7 +121,7 @@ int main(){
   fclose(K_beha);
   //FINE PLOT INTEGRANDI DI W E R IN FUNZIONE DI OMEGA
   
-
+  
 
   
   // ************************ INIZIO METODO ******************************
@@ -111,93 +129,64 @@ int main(){
   
   //CALCOLO MATRICE W E VETTORE R
   
-  for(int i=0; i<tmax; i++){
-    for(int j=0; j<tmax; j++){
-
+  for(int i=0; i<Nt; i++){
+    for(int j=0; j<Nt; j++){
 #if defined(EXP)
-      W_Mat(i,j) = W_an_exp(t_in[i], t_in[j], Estar);
+      W_Mat(i,j) = W_an_exp(t_a[i], t_a[j], Estar);
 #endif
 #if defined(COS)
-      W_Mat(i,j) = W_NInt(infLimit, supLimit, t_in[i], t_in[j]);
+      W_Mat(i,j) = W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar);
 #endif
       cout << "W[" << t_in[i] << "][" << t_in[j] << "]=" << W_Mat(i,j) << endl;
-      
+       
     }//j
     
     
     //Calcolo vettore R
 #if defined(HLN)
-    R(i) = 1/(t_in[i])*exp(-E0*t_in[i]);
+#if defined(EXP)
+    R(i) = 1/(t_a[i])*exp(-E0*t_a[i]);
+#endif
+#if defined(COS)
+    R(i) = R_NInt(infLimit, supLimit, t_a[i]);
+#endif
 #endif
     
 #if defined(BG)
 #if defined(EXP)
-    R(i) = 1/t_in[i];
+    R(i) = 1/(t_a[i]);
 #endif
 #if defined(COS)
-    R(i) = R_NInt(infLimit, supLimit, t_in[i]);
+    R(i) = R_NInt(infLimit, supLimit, t_a[i]);
 #endif
 #endif
     
-    cout << "R[" << t_in[i] << "]=" << R(i) << endl;
-	 
+    cout << "R[" << t_a[i] << "]=" << R(i) << endl;
     
   }//i
   
   
   
-
-  
-  
   // INVERSIONE MATRICE W
-  
   const auto Winv=W_Mat.inverse();
-  
-  //Id = ((Wm1*W_Mat)-Eigen::Identity(31,31)).norm();
-  for(int i=0; i<tmax; i++){
-    for(int j=0; j<tmax; j++){
-      
-      //cout << "Id: " << Id(i,j) << endl;
-      
-    }
-  } 
-  // FINE INVERSIONE MATRICE W
   
   
   //CALCOLO f
-  PrecVec f(tmax);
+  PrecVec f(Nt);
 #if defined(HLN)
-  for(int i=0; i<tmax; i++){
-#if defined(EXP)
-    f(i) = N(t_in[i])*D(t_in[i]);
+  f = f_func(t_a, sigma, Estar);
 #endif
-#if defined(COS)
-    f(i) = f_NInt(infLimit, supLimit,t_in[i]);
-#endif
-    cout << "f: " << f(i) << endl;
-  }
-#endif
-  // FINE CALCOLO f
- 
 
-  // CALCOLO g
-  Real den =  R.transpose()*Winv*R;
-  PrecVec g;
-#if defined(HLN)
-  Real numA = R.transpose()*Winv*f;
-  Real num = 1-numA;
-  PrecVec g1 = Winv*f;
-  g=Winv*f+ Winv*R*num/den;
-#endif
   
-#if defined(BG)
-  g=Winv*R/den;
-#endif
-  // FINE CALCOLO g
+  // CALCOLO g
+  PrecVec g;
+  g = Coeff(R,Winv,f);
+  
+  
 
 
   //Output coefficienti
-  for(int i=0; i<tmax; i++) cout << "g: " << g(i) << endl; 
+  for(int i=0; i<Nt; i++) cout << "g: " << g(i) << endl; 
     
   FILE *q_t_out;
   char open_q_t_out[1024];
@@ -210,12 +199,11 @@ int main(){
   }
   
   
-  for(int i=0; i<tmax; i++){
+  for(int i=0; i<Nt; i++){
     
-    fprintf(q_t_out, "%s " "%s\n", conv(t_in[i]).c_str(), conv(g(i)).c_str());
+    fprintf(q_t_out, "%s " "%s\n", conv(t_a[i]).c_str(), conv(g(i)).c_str());
     
   }
-  
   
   fclose(q_t_out);
   
@@ -234,12 +222,12 @@ int main(){
   
   
 #if defined(BG)
-    E0=0;
+  E0=0;
 #endif
     fprintf(Delta_S, "@type xy\n");
     for(double i=0; i<300; i++){
 
-      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(Delta_Smear(E0 + i/100, g, t_in)).c_str());
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 +0.0001 + i/100).c_str(), conv(Delta_Smear(E0 + 0.0001 + i/100, g, t_a)).c_str());
       
     }
     
@@ -248,14 +236,14 @@ int main(){
     
     for(double i=0; i<300; i++){
       
-      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(Target_F(E0 + i/100)).c_str());
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 +i/100).c_str(), conv(Target_F(E0 + 0.0001 + i/100, Estar, sigma)).c_str());
     }
   
     
     fprintf(Delta_S, "\n \n @type xy \n");
     for(double i=0; i<300; i++){
-      Real df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
-      fprintf(Delta_S, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(df).c_str());
+      Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
+      fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
     }
     
     
@@ -276,14 +264,36 @@ int main(){
     
     fprintf(Diff, "\n \n @type xy \n");
     for(double i=0; i<300; i++){
-      Real df=Target_F(E0 + i/100)-Delta_Smear(E0 + i/100, g, t_in);
-      fprintf(Diff, "%s " "%s\n", conv(E0 +i/100).c_str(), conv(df).c_str());
+      Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
+      fprintf(Diff, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
     }
     
     fclose(Diff);
 #endif
 
     
+    // Spectral function computation
+#if defined(EXP)
+    Real fomega =1;
+#endif
+#if defined(COS)
+    Real fomega = Estar;
+#endif
+      
+    cout << "rho(" << Estar << ")=" << fomega*spectral(g, Corr_try) << endl;
+    cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
+#if defined(HLN)
+    cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
+#endif
+
+
+    
+    // Procedura delta_sigma
+    
+    delta_sigma_procedure(0.05, Estar, t_a, R, Winv);
+
+
+    
     return 0;
-   
+    
 }

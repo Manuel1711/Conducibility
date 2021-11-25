@@ -1,16 +1,21 @@
-/////////////A/////////////////
+//////////////////////////////
 //PARAMETRI DEL CALCOLO
 
-#define tmax 31
+
+#define tmax 96
+#define tmin 1
+#define Nt tmax-tmin+1
+#define a 0.0988
 static Real beta=2*(tmax+1), Estar=0.5;
+//static Real beta=1/200;
 //Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
 static const Real sigma=0.1;
-Real E0=0.1; 
+static Real E0=0.0; 
 static const Real alpha=0;
 /////////////////////////////////////////                                   
- 
+
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
-const int P = 512;
+const int P = 1024;
 struct Initer
 {
   Initer()
