@@ -22,6 +22,7 @@ const Real inf=
 
 
 using PrecMatr= Matrix<Real,Dynamic,Dynamic>;
+using PrecMultiMatr = Matrix<Real,Dynamic,Dynamic,Dynamic,Dynamic>;
 using PrecVec = Matrix<Real,Dynamic, 1>;
 
 

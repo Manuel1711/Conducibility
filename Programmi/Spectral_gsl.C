@@ -2,10 +2,10 @@
 #include <iostream>
 #include <math.h>
 #include <sstream>
-#include <cmath>
+#include <cmath> 
 #include "mp.h"
 #include "smear.h"
-
+ 
 /////////////////////////////////////////
 //GLOBAL QUANTITIES
 Real t_in[Nt], t_a[Nt];
@@ -22,7 +22,7 @@ int main(){
    
   
   //INPUT DATA
-
+  
   //Input Correlatori
   FILE *Correlators_Inputs;
   char open_Correlators_Inputs[1024];
@@ -291,7 +291,7 @@ int main(){
     // Procedura delta_sigma
     
     delta_sigma_procedure(0.05, Estar, t_a, R, Winv);
-
+    
 
     
     return 0;

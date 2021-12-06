@@ -1,0 +1,132 @@
+#include <iostream>
+#include <math.h>
+#include "mp.h"
+
+using namespace std;
+
+#define NMass 3
+#define Dim 3
+#define Nt 40
+
+//int NConf[2] = {101,55};
+
+#define NConf 102
+
+string M[3] = {"mu", "md", "ms"};
+
+int main(){
+  
+     
+  Real Corr41[NConf][NMass][Dim][Nt];
+  Real tE[Nt];
+
+  
+  
+  FILE *Correlators_Inputs;
+  char open_Correlators_Inputs[1024];
+  
+    
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Correlatori_B/meson_corrs_Bz41_input.out");
+  
+  
+  if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Correlators_Inputs);
+    exit(EXIT_FAILURE);
+  }
+  
+  char trash1[1024], trash2[1024];
+  double trash3;
+  for(int conf=0; conf<NConf; conf++){ 
+    for(int d=0; d<Dim; d++){
+      for(int m=0; m<NMass; m++){
+	cout << "conf: " << conf << " d: " << d << " m: " << m << endl;
+	for(int t=0; t<Nt; t++){
+	  
+	  fscanf(Correlators_Inputs, "%s " "%s " "%lf\n", trash1, trash2, &trash3);
+	  tE[t] = conv(trash1);
+	  Corr41[conf][m][d][t] = conv(trash2);
+	  cout << "tE: " << tE[t] << " Corr: " << Corr41[conf][m][d][t] << endl;
+	  
+	  
+	}//t
+      }//d
+    }//m
+  }//conf
+  
+  fclose(Correlators_Inputs);
+
+
+  //Media
+  Real Corr41Mu[NMass][Dim][Nt];
+  for(int m=0; m<NMass; m++){
+    for(int d=0; d<Dim; d++){
+      for(int t=0; t<Nt; t++){
+	for(int conf=0; conf<NConf; conf++){
+	  
+	  Corr41Mu[m][d][t] += Corr41[conf][m][d][t];
+	
+	}
+	
+	Corr41Mu[m][d][t] = Corr41Mu[m][d][t]/NConf;
+
+      }
+    }
+  }
+
+
+  //Sigma
+
+  Real Corr41Err[NMass][Dim][Nt];
+  for(int m=0; m<NMass; m++){
+    for(int d=0; d<Dim; d++){
+      for(int t=0; t<Nt; t++){
+	for(int conf=0; conf<NConf; conf++){
+	  
+	  Corr41Err[m][d][t] += pow(Corr41[conf][m][d][t] - Corr41Mu[m][d][t], 2);
+	  
+	}
+	Corr41Err[m][d][t] = sqrt(Corr41Err[m][d][t]/pow(NConf,2));
+      }
+    }
+  }
+
+  //Output Correlatori
+
+  FILE *Correlators_Outputs;
+  char open_Correlators_Outputs[1024];
+
+
+  for(int m=0; m<NMass; m++){
+
+    sprintf(open_Correlators_Outputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Output/Corr_%s_Bz41.out", M[m].c_str());
+    
+    if ((Correlators_Outputs = fopen(open_Correlators_Outputs, "w")) == NULL ){
+      printf("Error opening the input file: %s\n",open_Correlators_Outputs);
+      exit(EXIT_FAILURE);
+    }
+
+    fprintf(Correlators_Outputs,"@type xydy");
+    
+    for(int d=0; d<Dim; d++){
+      
+      fprintf(Correlators_Outputs, "\n \n ");
+      
+      for(int t=0; t<Nt; t++){
+	
+	fprintf(Correlators_Outputs, "%s " "%s " "%s\n", conv(tE[t]).c_str(), conv(Corr41Mu[m][d][t]).c_str(), conv(Corr41Err[m][d][t]).c_str());
+	
+	
+      }
+
+    }
+
+  }
+
+  fclose(Correlators_Outputs);
+
+
+  
+  return 0;
+  
+}
+
