@@ -5,7 +5,7 @@ set -e
 PATH=$PATH:/Users/manuel/Documents/GitHub/Conducibility/Programmi/
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
-#@@@@@@@@@@@@             SPECTRAL EXTRACTION            @@@@@@@@@@@@#
+#@@@@@@@@@@@@             SMEARING EXTRACTION            @@@@@@@@@@@@#
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#
 
 
@@ -14,7 +14,7 @@ PATH=$PATH:/Users/manuel/Documents/GitHub/Conducibility/Programmi/
 optimization="0 -g"
 
 boolM=1
-boolB=0
+boolB=1
 #declared="-D ABAB"
 
 if [ $boolM -eq 0 ]
@@ -40,8 +40,8 @@ fi
 
  
 
-g++ -O$optimization -std=c++11 -o Spectral_gsl Spectral_gsl.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas $Method $Basis
+g++ -O$optimization -std=c++11 -o Smearing_Func Smearing_Func.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas $Method $Basis
 
 
-./Spectral_gsl
+./Smearing_Func
 

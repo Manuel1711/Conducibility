@@ -30,15 +30,18 @@ Let us consider an Euclidean time-ordered correlator at discrete values of the s
 \begin{equation}
 C(t) = \frac{1}{V}\sum_{\vec{x}} \langle 0 | T( \mathcal{O}(t,\vec{x}) \mathcal{O}(0)) |0\rangle.
 \end{equation}
-If we consider the case $t>0$ and we insert a complete set of states we obtain
+If we consider positive Euclidean times $t \geq 0$ and we insert a complete set of states we obtain
 \begin{equation}\begin{split}
-C(t)_{t>0} &= \frac{1}{V}\sum_{\vec{x}} \langle 0 |  \mathcal{O}(t,\vec{x}) \mathcal{O}(0)|0\rangle  = \frac{1}{V}\sum_{\vec{x}} \sum_n \langle 0 |  \mathcal{O}(t,\vec{x}) |n\rangle \langle n | \mathcal{O}(0) |0\rangle \\& = \frac{1}{V} \sum_n  e^{-E_n t} \sum_{\vec{x}} \langle 0 |  \mathcal{O}(t,\vec{x}) |n\rangle \langle n | \mathcal{O}(0) |0\rangle = \int_0^\infty d \omega \rho(\omega) e^{-\omega t}
+C(t)_{t\geq0} &= \frac{1}{V}\sum_{\vec{x}} \langle 0 |  \mathcal{O}(t,\vec{x}) \mathcal{O}(0)|0\rangle  = \frac{1}{V}\sum_{\vec{x}} \sum_n \langle 0 |  \mathcal{O}(t,\vec{x}) |n\rangle \langle n | \mathcal{O}(0) |0\rangle \\& = \frac{1}{V} \sum_n  e^{-E_n t} \sum_{\vec{x}} \langle 0 |  \mathcal{O}(t,\vec{x}) |n\rangle \langle n | \mathcal{O}(0) |0\rangle = \int_0^\infty d \omega \rho(\omega) e^{-\omega t}
 \end{split}\end{equation}
 where 
 \begin{equation}
 \rho(\omega) = \sum_n \delta(\omega- E_n) \sum_{\vec{x}} \langle 0 |  \mathcal{O}(t,\vec{x}) |n\rangle \langle n | \mathcal{O}(0) |0\rangle, 
 \end{equation}
-is a distribution called spectral density having support in correspondence of the states spectrum specified by the quantum numbers of the operator $\mathcal{O}$. If we also consider the other ordering of time, a further piece appears and the correlator can be written as
+is a distribution called spectral density having support in correspondence of the states spectrum specified by the quantum numbers of the operator $\mathcal{O}$. 
+
+
+If we also consider the other ordering of time, a further piece appears and the correlator can be written as
 \begin{equation}\label{eq: CorrBasis}
 C(t) = \int_0^\infty \rho(\omega) (e^{-\omega t} + e^{-\omega(T-t)}) = \int_0^\infty \rho(\omega) K_T(\omega, t),
 \end{equation}
