@@ -139,7 +139,7 @@ int main(){
 
   fclose(Correlators_Outputs);
 
-
+  
   //Sum of the correlators weighted by their charges
   Real Corr_Tot[2][NConf[1]][Dim][Nt];
   
@@ -149,7 +149,7 @@ int main(){
 	for(int t=0; t<Nt; t++) {
 
 	  for(int m=0; m<NMass; m++){
-
+	    
 	    Corr_Tot[B][conf][d][t] += C[m]*Corr[B][conf][m][d][t];
 	  } 
 	  
@@ -210,7 +210,7 @@ int main(){
 	      if(j != i) Corr_Mu_Jack_41[i][d][t] += Clust_Mu_41[j][d][t];
 	    if(B==1)
 	      if(j != i) Corr_Mu_Jack_93[i][d][t] += Clust_Mu_93[j][d][t];
-
+	    
 	  }
 	  if(B==0) Corr_Mu_Jack_41[i][d][t]=Corr_Mu_Jack_41[i][d][t]/(NClust[B]-1);
 	  if(B==1) Corr_Mu_Jack_93[i][d][t]= Corr_Mu_Jack_93[i][d][t]/(NClust[B]-1);

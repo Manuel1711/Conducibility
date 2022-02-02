@@ -4,20 +4,20 @@
 
 #define tmax 9
 #define tmin 0
-#define Nt (tmax + 1 - tmin)/2
+#define Nt 3
 #define a 0.0988
-static Real beta=2*(tmax+1), Estar=0.5;
+static Real beta=tmax+1;
 //static Real beta=1/200;
 //Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
 static const Real sigma=0.1;
-static Real E0=0.1; 
+static Real E0=0.0; 
 static const Real alpha=0;
 /////////////////////////////////////////                                   
  
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
 const int P = 1024;
 struct Initer
-{
+{ 
   Initer()
   {
     mpfr_class::set_dprec(P);

@@ -5,7 +5,7 @@
 #include <cmath> 
 #include "mp.h"
 #include "smear.h"
- 
+
 /////////////////////////////////////////
 //GLOBAL QUANTITIES
 Real t_a[Nt];
@@ -14,49 +14,109 @@ Real t_a[Nt];
 
 int main(){
   
+#if defined(SINGLE)
+  Real Estar=0.0;
+#endif
+#if defined(CICLO)
+  FILE *Estar_Inputs;
+  char open_Estar_Inputs[1024];
+  
+  sprintf(open_Estar_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Output/bin.out");
+  
+  if ((Estar_Inputs = fopen(open_Estar_Inputs, "r")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Estar_Inputs);
+    exit(EXIT_FAILURE);
+  }
+  char tt[1024];
+  fscanf(Estar_Inputs, "%s", tt);
+  
+  Real Estar = conv(tt);
+  
+#endif
+ 
+  cout << "************ Estar=" << Estar << " ************" << endl;
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
   PrecMatr W_Mat(Nt,Nt), Id(Nt, Nt), Id_bis(Nt, Nt);
-  PrecVec R(Nt), Corr_par(Nt);
+  PrecVec R(Nt), Corr(Nt), Corr_e(Nt), Corr_o(Nt), Corr_err(Nt), Corr_err_e(Nt), Corr_err_o(Nt), rho(2);
   
+  
+  
+  // INPUT QUANTITIES
   
   //Input Correlatori
   FILE *Correlators_Inputs;
   char open_Correlators_Inputs[1024];
   
-  sprintf(open_Correlators_Inputs, "Correlatori_Corrected/zero_mus/b3.85/corr_mu=0.000_format");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Desktop/Russi/1/b3.85/corr_mu=0.140_format");
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Desktop/zero_must/b3.85/corr_mu=0.285_format");
+  //sprintf(open_Correlators_Inputs, "Correlatori_Corrected/zero_mus/b3.85/corr_mu=0.000_format");
   //sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Output/Jack_Corr/Corr_Jack_41_xx");
   
   if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
     printf("Error opening the input file: %s\n",open_Correlators_Inputs);
     exit(EXIT_FAILURE);
   }
-  double trash1, trash2;
-  char trash3[1024];
+  double trash1;
+  char trash3[1024], trash2[1024];
   for(int i=0; i<2*Nt; i++){
     
-    fscanf(Correlators_Inputs, "%lf " "%s " "%lf\n", &trash1, trash3, &trash2);
+    fscanf(Correlators_Inputs, "%lf " "%s " "%s\n", &trash1, trash3, trash2);
     //fscanf(Correlators_Inputs, "%lf " "%s\n" , &trash1, trash3);
     if(i%2){}
     else{
       cout << "i: " << i << endl;
-      Corr_par(i/2) = conv(trash3);
-      cout  <<  " Corr[" << i/2 << "]=" << Corr_par(i/2) << endl; 
+      Corr_e(i/2) = conv(trash3);
+      Corr_err_e(i/2) = conv(trash2);
+      cout  <<  " Corr_e[" << i/2 << "]=" << Corr_e(i/2) << endl; 
+    }
+    if(i%2){
+      cout << "i: " << i << endl;
+      Corr_o(i/2) = conv(trash3);
+      Corr_err_o(i/2) = conv(trash2);
+      cout  <<  " Corr_o[" << i/2 << "]=" << Corr_o(i/2) << endl;
     }
   }
   
   
   fclose(Correlators_Inputs);
   
-  
-  
-  //Binnaggio t
+  //FOR SULLE PARI E LE DISPARI
+  for(int eo=0; eo<2; eo++){
+
+
+
+
+
+
+    
+    if(eo==0){
+      Corr=Corr_e;
+      Corr_err = Corr_err_e;
+    }
+    if(eo==1){
+      Corr=Corr_o;
+      Corr_err = Corr_err_o;
+    }
+      //Binnaggio t
   for(int i=0; i<Nt; i++){
+#if defined(EV)
     t_a[i-tmin] = 2*i;
+#endif
+#if defined(ODD)
+    t_a[i-tmin] = 2*i+1; 
+#endif
     cout << "t_a[" << i-tmin << "]" << t_a[i-tmin] << endl;
   }
   
+
+  // FINE INPUT QUANTITIES
+
+
+  
+  
   //Prova
+  /*
   PrecVec Corr_try(Nt);
   for(int i=0; i<Nt; i++){
     const auto f_try=
@@ -67,14 +127,15 @@ int main(){
 #endif
 #if defined(COS)
        return exp(-E)*K(E, t_a[i], beta)/E;  
-#endif
+       #endif
       };
     
     Corr_try(i)=
       bq::gauss_kronrod<Real,61>::integrate(f_try,infLimit,supLimit,5,1e-16);
     //cout << "Try: " << Corr_try(i) << endl;
   }
-  
+  */
+
   
   //PLOT INTEGRANDI DI W E R IN FUNZIONE DI OMEGA
   
@@ -125,7 +186,7 @@ int main(){
       cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
       
     }//j
-    
+      
     
     //Calcolo vettore R
 #if defined(HLN)
@@ -149,6 +210,7 @@ int main(){
     cout << "R[" << t_a[i] << "]=" << R(i) << endl;
     
   }//i
+  
   
   
   
@@ -264,12 +326,37 @@ int main(){
   Real fomega = Estar;
 #endif
   
-  cout << "rho(" << Estar << ")=" << Estar*spectral(g, Corr_par) << endl;
+  if(eo==0) cout << "rho_even(" << Estar << ")=" << spectral(g, Corr) << "   " << stat_unc(g, Corr_err) << endl;
+  if(eo==1) cout << "rho_odd(" << Estar << ")=" << spectral(g, Corr) << "   " << stat_unc(g, Corr_err) << endl;
   //cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
 #if defined(HLN)
   //cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
 #endif
   
+
+
+  }//eo
+
+
+
+  
+#if defined(CICLO)
+  
+  FILE *rho_output;
+  char open_rho_output[1024];
+
+  sprintf(open_rho_output, "/tmp/temp.out");
+  if ((rho_output = fopen(open_rho_output, "w")) == NULL ){
+    printf("Error opening the input file: %s\n",open_rho_output);
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(rho_output,"%s " "%s\n", conv(spectral(g, Corr)).c_str(), conv(abs(stat_unc(g, Corr_err))).c_str());
+  
+  fclose(rho_output);
+  
+#endif
+
   
   // Procedura delta_sigma
   

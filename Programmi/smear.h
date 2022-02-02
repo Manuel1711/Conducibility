@@ -41,8 +41,8 @@ Real K(Real omega, Real t, Real beta){
 #if defined(COS)
   Real A=cosh(omega*(t - beta/2));
   Real B=sinh(beta*omega/2);
-  ret = A/B*omega; 
-#endif
+  ret = A/B*omega; //Se moltiplico per omega alla fine ottengo rho/omega che è quello che mi interessa
+#endif 
   
   return ret;
 }
@@ -179,24 +179,22 @@ Real rho_NInt(Real infLimit, Real supLimit, Real Es, Real s){
 Real spectral(PrecVec q, PrecVec C){
   
   Real rho=0;
-  for(int i=0; i<Nt; i++){
-#if defined(EXP)
+  for(int i=0; i<Nt; i++)
     rho += q(i)*C(i);
-#endif
-#if defined(COS)
-    rho += q(i)*C(i);
-    cout << "q: " << q(i) << "  C: " << C(i) << " qC" << q(i)*C(i) << "  rho:" << rho << endl;
-#endif
-  }
-  
-  //cout << "AAA: " << q.transpose()*C << endl;
-  
   return rho;
   
 }
 
 
+Real stat_unc(PrecVec q, PrecVec dC){
 
+  Real err=0;
+  for(int i=0; i<Nt; i++)
+    err += q(i)*dC(i);
+  return err;
+  
+}
+ 
 
 void delta_sigma_procedure(Real delta_sigma, Real Es, Real t_a[], PrecVec R, PrecMatr Winv){
   
