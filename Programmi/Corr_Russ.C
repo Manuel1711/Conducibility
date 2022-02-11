@@ -6,7 +6,7 @@ using namespace std;
 
 #define NMass 3
 #define Dim 3
-#define Nt 10
+#define Nt 40
 
 int NConf=108;
 

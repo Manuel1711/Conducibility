@@ -31,10 +31,8 @@ fi
 boolM=0
 #basis
 boolB=1
-#even/odd
-boolEO=0
 #declared="-D ABAB"
-
+ 
 
 if [ $boolM -eq 0 ]
 then
@@ -59,19 +57,7 @@ fi
 
 
 
-if [ $boolEO -eq 0 ]
-then
-    EO="-D EV"
-fi
-
-if [ $boolEO -eq 1 ]
-then
-    EO="-D ODD"
-fi
-
-
-
-g++ -O$optimization -std=c++11 -o Smearing_Func Smearing_Func.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas $Method $Basis $EO $N
+g++ -O$optimization -std=c++11 -o Smearing_Func Smearing_Func.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas $Method $Basis $N
 
 
 

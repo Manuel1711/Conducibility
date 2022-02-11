@@ -1,17 +1,16 @@
 //////////////////////////////
 //PARAMETRI DEL CALCOLO
-
-
-#define tmax 9
+#define tmax 39
 #define tmin 0
-#define Nt 3
-#define a 0.0988
+#define Nt 10 
 static Real beta=tmax+1;
 //static Real beta=1/200;
 //Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
-static const Real sigma=0.1;
+static const Real sigma=1.7/12;
 static Real E0=0.0; 
 static const Real alpha=0;
+static const Real lambda=0.0;
+static const int Nboot = 100;
 /////////////////////////////////////////                                   
  
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   

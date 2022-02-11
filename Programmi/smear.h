@@ -6,7 +6,8 @@ Real Z( Real s, Real Es){
 
 
 Real Target_F(Real E, Real Es, Real s){
-  return exp(-pow(E-Es,2)/(2*s*s))/(sqrt(2*Pi)*s*Z(s,Es));
+  //return exp(-pow(E-Es,2)/(2*s*s))/(sqrt(2*Pi)*s*Z(s,Es));
+  return 1/pow((s*Pi/2),2)*E/(sinh(E/s)); 
 }
 
 
@@ -33,7 +34,7 @@ Real D(Real t, Real s, Real Es){
 Real K(Real omega, Real t, Real beta){
   
   Real ret;
-
+  
 #if defined(EXP)
   ret=exp(-omega*t); //+ exp(-(beta-t)*omega);
 #endif
@@ -181,7 +182,7 @@ Real spectral(PrecVec q, PrecVec C){
   Real rho=0;
   for(int i=0; i<Nt; i++)
     rho += q(i)*C(i);
-  return rho;
+  return 2*Pi*rho;
   
 }
 
