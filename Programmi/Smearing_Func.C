@@ -34,7 +34,7 @@ int main(){
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
   PrecMatr W_Mat(Nt,Nt), Id(Nt, Nt), Id_bis(Nt, Nt), Corr_e(Nboot,Nt), Corr_o(Nboot,Nt), rho(Nboot,2);
-  PrecVec R(Nt), Corr(Nt), Corr_err(Nt), Corr_err_e(Nt), Corr_err_o(Nt);
+  PrecVec Corr_err_e(Nt), Corr_err_o(Nt), Corr_mu_e(Nt), Corr_mu_o(Nt);
   
   
   
@@ -43,13 +43,9 @@ int main(){
   FILE *Correlators_Inputs, *Correlators_Inputs_MuS;
   char open_Correlators_Inputs[1024], open_Correlators_Inputs_MuS[1024];
   
-  //sprintf(open_Correlators_Inputs_mIz, "/Users/manuel/Desktop/Russi/1/b3.85/corr_mu=0.000_format");
-  //sprintf(open_Correlators_Inputs_mIz, "/Users/manuel/Desktop/zero_must/b3.93998000/corr_33_mu=0.0");
-  //sprintf(open_Correlators_Inputs, "/Users/manuel/Desktop/zero_must/b3.93998000/corr_mu=0.140_format");
-  sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Bootstraps/T20L24_beta3.787_b93_Subtracted/boot_correlators_xy.out");
-  sprintf(open_Correlators_Inputs_MuS, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Means_Sigmas/T20L24_beta3.787_b93_Subtracted/mu_sigma_correlators_xy.out");
-  //sprintf(open_Correlators_Inputs, "Correlatori_Corrected/zero_mus/b3.85/corr_mu=0.000_format");
-  //sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Output/Jack_Corr/Corr_Jack_41_xx");
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Bootstraps/T40L48_beta4.14_b93_Subtracted/boot_correlators_xy.out");
+  sprintf(open_Correlators_Inputs_MuS, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Means_Sigmas/T40L48_beta4.14_b93_Subtracted/mu_sigma_correlators_xy.out");
+   
   if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
     printf("Error opening the input file: %s\n",open_Correlators_Inputs);
     exit(EXIT_FAILURE);
@@ -60,37 +56,45 @@ int main(){
   }
   double trash1;
   char trash2[1024];
-  for(int i=0; i<2*Nt; i++){
+  int e=0,o=0;
+  int em=0, om=0;
+  for(int i=0; i<2*Nt+1; i++){ //C'è +1 perché invece di t=0 prendiamo t=20 (parte da 0 perché deve scorrere).
     for(int iboot=0; iboot<Nboot; iboot++){
-      
       fscanf(Correlators_Inputs, "%lf " "%s\n", &trash1, trash2);
-      if(i%2){}
-      else{
-	Corr_e(iboot,i/2) = conv(trash2);
-	cout  <<  " Corr_e[" << i/2 << "]=" << Corr_e(iboot,i/2) << endl; 
+      if(i%2==0 and i>0){ 
+      	Corr_e(iboot,e) = conv(trash2);
+	cout  <<  " Corr_e[" << e << "," << iboot << "]=" << Corr_e(iboot,e) << endl; 
+	if(iboot==Nboot-1) e++;
       }
-      if(i%2){
-	Corr_o(iboot, i/2) = conv(trash2);
-        cout  <<  " Corr_o[" << i/2 << "]=" << Corr_o(iboot,i/2) << endl;
+      else if(i%2 != 0){
+	Corr_o(iboot, o) = conv(trash2);
+        cout  <<  " Corr_o[" << o << "," << iboot << "]=" << Corr_o(iboot,o) << endl;
+	if(iboot==Nboot-1) o++;
       }
     }//iboot
-
-    if(i%2){} 
-    else{
+    
+    if(i%2==0 and i>0){ 
       double trash;
       char trash_b[1024], trash_bb[1024];
       fscanf(Correlators_Inputs_MuS, "%lf " "%s " "%s\n", &trash, trash_b, trash_bb);
-      Corr_err_e(i/2) = conv(trash_bb);
+      Corr_mu_e(em) = conv(trash_b);
+      Corr_err_e(em) = conv(trash_bb);
+      em++;
     }
-    if(i%2){
+    else if(i%2 != 0){
       double trash;
       char trash_b[1024], trash_bb[1024];
       fscanf(Correlators_Inputs_MuS, "%lf " "%s " "%s\n", &trash, trash_b, trash_bb);
-      Corr_err_o(i/2) = conv(trash_bb);
+      Corr_mu_o(om) = conv(trash_b);
+      Corr_err_o(om) = conv(trash_bb);
+      om++;
     }
     
   }//i
-  
+  e=0;
+  o=0;
+  em=0;
+  om=0;
   
   fclose(Correlators_Inputs);
 
@@ -106,32 +110,42 @@ int main(){
   for(int eo=0; eo<2; eo++){//pari e dispari
     for(int iboot=0; iboot<Nboot; iboot++){
       
+      PrecVec Corr(Nt), Corr_err(Nt), Corr_Mu(Nt), R(Nt);
       PrecMatr Cov(Nt,Nt);
       Real t_a[Nt];
-      cout << " OOOOOOO " << endl;
       for(int i=0; i<Nt; i++){
 	if(eo==0){
 	  Corr(i)=Corr_e(iboot,i);
 	  Corr_err(i) = Corr_err_e(i);
+	  Corr_Mu(i) = Corr_mu_e(i);
 	}
 	if(eo==1){
 	  Corr(i)=Corr_o(iboot,i);
 	  Corr_err(i) = Corr_err_o(i);
+	  Corr_Mu(i) = Corr_mu_o(i);
 	}
-      }
-      cout << " OOOOOOO222 " << endl;
+	cout << "iboot: " << iboot << " i: " << i << " C: " << Corr(i) << endl;
+      } 
+
       //Binnaggio t
-      for(int i=0; i<Nt; i++){
-	if(eo==0)
-	  t_a[i-tmin] = 2*i;
-	if(eo==1)
-	  t_a[i-tmin] = 2*i+1; 
-	cout << "t_a[" << i-tmin << "]" << t_a[i-tmin] << endl;
+      e=0;
+      o=0;
+      for(int i=1; i<Nt+1; i++){
+	if(eo==0){
+	  t_a[e] = 2*i;
+	  e++;
+	}
+	if(eo==1){
+	  t_a[o] = 2*i-1; 
+	  o++;
+	}
+	cout << "t_a[" << i-1 << "]" << t_a[i-1] << endl;
       }
       for(int i=0; i<Nt; i++){
 	for(int j=0; j<Nt; j++){
 	  if(i==j){
 	    Cov(i,j)=Corr_err(i)*Corr_err(j);
+	    cout << "Cov: " <<  Cov(i,j) << endl; 
 	  }
 	  else Cov(i,j)=0;
 	}
@@ -143,14 +157,12 @@ int main(){
   for(int i=0; i<Nt; i++){
     for(int j=0; j<Nt; j++){
 #if defined(EXP)
-      W_Mat(i,j) = (1-lambda)*W_an_exp(t_a[i], t_a[j], Estar)+(lambda)/pow(Corr(0),2)*Cov(i,j);
+      W_Mat(i,j) = (1-lambda)*W_an_exp(t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
 #endif 
 #if defined(COS)
-      W_Mat(i,j) = (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar)+(lambda)/pow(Corr(0),2)*Cov(i,j);
-      cout << "PPP: " << Corr(0) << endl;
+      W_Mat(i,j) = (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
 #endif
-      cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
-      
+      //cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
     }//j
       
     
@@ -172,9 +184,7 @@ int main(){
     R(i) = R_NInt(infLimit, supLimit, t_a[i]);
 #endif
 #endif
-    
-    cout << "R[" << t_a[i] << "]=" << R(i) << endl;
-    
+    //cout << "R[" << t_a[i] << "]=" << R(i) << endl;
   }//i
   
   
@@ -194,14 +204,12 @@ int main(){
   //Calcolo g
   PrecVec g;
   g = Coeff(R,Winv,f);
-  
-  
+  for(int i=0; i<Nt; i++)
+    cout << "g(" << i << ")="<< g(i) << endl;
   
   
   //Output coefficienti
-  for(int i=0; i<Nt; i++) cout << "g: " << g(i) << endl; 
-  
-  FILE *q_t_out;
+  /*FILE *q_t_out;
   char open_q_t_out[1024];
   
   sprintf(open_q_t_out, "Output/q_t_out.out");
@@ -213,7 +221,7 @@ int main(){
     fprintf(q_t_out, "%s " "%s\n", conv(t_a[i]).c_str(), conv(g(i)).c_str());
   }
   fclose(q_t_out);
-  
+  */
   
 
   //Output funzione di smearing
@@ -286,8 +294,9 @@ int main(){
 #if defined(COS)
   Real fomega = Estar;
 #endif
-  
-  rho(iboot,eo)=spectral(g, Corr); 
+    
+  rho(iboot,eo)=spectral(g, Corr);
+  //cout << "Bg ****** rho(" << iboot << ")=" << rho(iboot,eo) << endl;
   if(eo==0) cout << "rho_even(" << Estar << ")=" << rho(iboot,eo) << "   " << stat_unc(g, Corr_err) << endl;
   if(eo==1) cout << "rho_odd(" << Estar << ")=" << rho(iboot,eo) << "   " << stat_unc(g, Corr_err) << endl;
   //cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
@@ -295,7 +304,7 @@ int main(){
   //cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
 #endif
   
-
+  
     }//iboot
   }//eo
 
@@ -313,13 +322,19 @@ int main(){
     for(int iboot=0; iboot<Nboot; iboot++){
       rho_mu(eo) += rho(iboot,eo);
       Bar_Sigma(eo) += rho(iboot,eo)*rho(iboot,eo);
+      //cout << "rho: " << rho(iboot,eo) << endl;
     }
+    Bar_Sigma(eo) = Bar_Sigma(eo)/Nboot;
     rho_mu(eo) = rho_mu(eo)/Nboot;
-    rho_sigma(eo) = (Bar_Sigma(eo)-rho_mu(eo)*rho_mu(eo)/Nboot)/Nboot;
+    //cout << "AAA: " << Bar_Sigma(eo) << "  " << rho_mu(eo)*rho_mu(eo) << endl;
+    rho_sigma(eo) = sqrt((Bar_Sigma(eo)-rho_mu(eo)*rho_mu(eo))/Nboot);
   } 
+
+  Real Sigma_mu = rho_mu(0)+rho_mu(1);
+  Real Sigma_s = sqrt(rho_sigma(0)*rho_sigma(0) + rho_sigma(1)*rho_sigma(1));
   
-  cout << "Sigma: " << rho_mu(0)+rho_mu(1) << "   " << sqrt(rho_sigma(0)*rho_sigma(0) + rho_sigma(1)*rho_sigma(1)) << endl;
-  cout << "Sigma Plot: " << (rho_mu(0)+rho_mu(1))/(2*(4*Pi/(137.04)*(0.6666666*0.6666666 + 2*0.33333333*0.33333333))) << endl;
+  cout << "Sigma: " << Sigma_mu  << "   " << Sigma_s << endl;
+  cout << "Sigma Plot: " << beta*Sigma_mu/(2*(4*Pi/(137.04)*(0.6666666*0.6666666 + 2*0.33333333*0.33333333))) <<  "  " <<  Sigma_s/(2*(4*Pi/(137.04)*(0.6666666*0.6666666 + 2*0.33333333*0.33333333))) << endl;
   
   
 #if defined(CICLO)

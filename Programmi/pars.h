@@ -9,8 +9,8 @@ static Real beta=tmax+1;
 static const Real sigma=1.7/12;
 static Real E0=0.0; 
 static const Real alpha=0;
-static const Real lambda=0.0;
-static const int Nboot = 100;
+static const Real lambda=0.01;
+static const int Nboot = 50;
 /////////////////////////////////////////                                   
  
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   

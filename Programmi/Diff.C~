@@ -1,0 +1,37 @@
+#include <iostream>
+#include <math.h>
+#include "mp.h"
+#include "statistical.h"
+
+
+int main(){
+
+    Real *****Corr_bz = new Real****[3];
+  for(int bz=0; bz<3; bz++){
+    Corr_bz[bz] = new Real***[NConf[1]];
+    for(int iconf = 0; iconf < NConf[1]; iconf++){
+      Corr_bz[bz][iconf] = new Real**[NMass];
+      for(int m = 0; m < NMass; m++){
+        Corr_bz[bz][iconf][m] = new Real*[Dim];
+        for(int d=0; d<Dim; d++){
+          Corr_bz[bz][iconf][m][d] = new Real[Nt];
+        }
+      }
+    }
+  }
+
+
+  Real *tE = new Real[Nt];
+
+  FILE *Correlators_bz_Inputs;
+  char open_Correlators_bz_Inputs[1024];
+
+
+
+
+  
+
+  return 0;
+
+
+}

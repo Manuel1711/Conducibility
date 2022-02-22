@@ -180,8 +180,11 @@ Real rho_NInt(Real infLimit, Real supLimit, Real Es, Real s){
 Real spectral(PrecVec q, PrecVec C){
   
   Real rho=0;
-  for(int i=0; i<Nt; i++)
+  for(int i=0; i<Nt; i++){
     rho += q(i)*C(i);
+    cout << "Bg: " << q(i) << "  " << C(i) << "  " << q(i)*C(i) << "  " << rho << endl;
+  }
+  
   return 2*Pi*rho;
   
 }
