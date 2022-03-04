@@ -20,7 +20,7 @@ Real Boot_Sigma(Real Boot[], int Nboot, Real Mean){
   
 }
 
-Real Boot_Sigma(Real Boot[], int Nboot){
+Real Boot_Sigma(Real Boot[], int Nboot, int NConf){
   
   Real Mean_Sq=0, Mean=0;
   for(int iboot=0; iboot<Nboot; iboot++){
@@ -30,6 +30,6 @@ Real Boot_Sigma(Real Boot[], int Nboot){
   Mean_Sq = Mean_Sq/Nboot;
   Mean = Mean/Nboot;
   
-  return sqrt(Mean_Sq-Mean*Mean);
+  return sqrt(NConf/(NConf-1))*sqrt(Mean_Sq-Mean*Mean);
   
 }

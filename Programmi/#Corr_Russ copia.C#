@@ -1,0 +1,116 @@
+#include <iostream>
+#include <math.h>
+#include "mp.h"
+ 
+using namespace std;
+
+#define NMass 3
+#define Dim 3
+#define Nt 12
+
+int NConf=105;
+
+string M[3] = {"mu", "md", "ms"};
+string D_s[3] = {"xx", "yy", "zz"};
+
+
+Real e2 = 4*Pi/(137.04);
+
+int main(){
+
+  Real Corr[NConf][NMass][Dim][Nt];
+  Real tE[Nt];
+  
+  FILE *Correlators_Inputs;
+  char open_Correlators_Inputs[1024];
+  double C[3]={0.6666666666666666666666667, -0.333333333333333333333333, -0.3333333333333333333333333};
+  
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T12_b4.06100000_ml0.0009168830_ms0.0258102551_zero_strange/nissa_mu0.200/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T10_b3.85_ml0.0014_ms0.0394_zero_strange/nissa_mu0.200/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/mu_zero/L48_T10_b3.96127000_ml0.0011192722_ms0.0315075218/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T12_b3.93998000_ml0.0011677267_ms0.0328715394_zero_strange/nissa_mu0.140/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b0/meson_corrs_Cleaned_47"); 
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b41/meson_corrs_Cleaned_102");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b93/meson_corrs_Cleaned_56");
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_mu/mu_zero/L48_T12_b4.06100000_ml0.0009168830_ms0.0258102551/meson_corrs_Cleaned_105");
+  if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Correlators_Inputs);
+    exit(EXIT_FAILURE);
+  }
+  
+  char trash1[1024], trash2[1024];
+  double trash3;
+  
+  for(int conf=0; conf<NConf; conf++){ 
+      for(int d=0; d<Dim; d++){
+	for(int m=0; m<NMass; m++){
+	  cout << "conf: " << conf << " d: " << d << " m: " << m << endl;
+	  for(int t=0; t<Nt; t++){
+	    
+	    fscanf(Correlators_Inputs, "%s " "%s " "%lf\n", trash1, trash2, &trash3);
+	    tE[t] = conv(trash1);
+	    Corr[conf][m][d][t] = conv(trash2);
+	    cout << "tE: " << tE[t] << " Corr: " << Corr[conf][m][d][t] << endl;
+	    
+	    
+	}//t
+  
+      }//d
+    }//m
+  }//conf
+    
+
+
+  Real Corr_Mass[NConf][Dim][Nt];
+
+  for(int conf=0; conf<NConf; conf++){ 
+    for(int t=0; t<Nt; t++){
+      for(int d=0; d<Dim; d++){
+
+	for(int m=0; m<NMass; m++){
+
+	  Corr_Mass[conf][d][t] +=  C[m]*C[m]/16*Corr[conf][m][d][t]; 
+	  cout << Corr_Mass[conf][d][t] << endl;
+        }
+	
+      }
+    }
+  }
+
+
+  Real Corr_Mass_D[NConf][Nt];
+
+  for(int conf=0; conf<NConf; conf++){ 
+    for(int t=0; t<Nt; t++){
+
+      for(int d=0; d<Dim; d++){
+	Corr_Mass_D[conf][t] += Corr_Mass[conf][d][t];
+      }
+      Corr_Mass_D[conf][t]=Corr_Mass_D[conf][t]/3;
+    }
+  }
+
+  Real Corr_Mean[Nt];
+  for(int t=0; t<Nt; t++){  
+    
+    for(int conf=0; conf<NConf; conf++){
+      Corr_Mean[t] += Corr_Mass_D[conf][t];
+    }
+    Corr_Mean[t]/NConf;
+  }
+  
+  Real Corr_Err[Nt];
+  for(int t=0; t<Nt; t++){  
+    
+    for(int conf=0; conf<NConf; conf++){
+      Corr_Err[t] += pow(Corr_Mass_D[conf][t]- Corr_Mean[t],2);
+    }
+    Corr_Err[t] = Corr_Err[t]/NConf;
+  }
+
+  for(int t=0; t<Nt; t++)
+    cout << t << "  " << e2*Corr_Mean[t] << "  " << e2*Corr_Err[t] << endl; 
+  
+  return 0;
+  
+}

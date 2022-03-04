@@ -6,9 +6,9 @@ using namespace std;
 
 #define NMass 3
 #define Dim 3
-#define Nt 40
+#define Nt 12
 
-int NConf=56;
+int NConf=105;
 
 string M[3] = {"mu", "md", "ms"};
 string D_s[3] = {"xx", "yy", "zz"};
@@ -32,7 +32,8 @@ int main(){
   //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T12_b3.93998000_ml0.0011677267_ms0.0328715394_zero_strange/nissa_mu0.140/meson_corrs_Cleaned");
   //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b0/meson_corrs_Cleaned_47"); 
   //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b41/meson_corrs_Cleaned_102");
-  sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b93/meson_corrs_Cleaned_56");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b93/meson_corrs_Cleaned_56");
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_mu/mu_zero/L48_T12_b4.06100000_ml0.0009168830_ms0.0258102551/meson_corrs_Cleaned_105");
   if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
     printf("Error opening the input file: %s\n",open_Correlators_Inputs);
     exit(EXIT_FAILURE);
@@ -53,7 +54,7 @@ int main(){
 	    cout << "tE: " << tE[t] << " Corr: " << Corr[conf][m][d][t] << endl;
 	    
 	    
-	}//t
+	  }//t
   
       }//d
     }//m
@@ -119,34 +120,31 @@ int main(){
   
   
   //Sum of the correlators on the three directions
-  Real CorrMu_TotMean[Nt][2], CorrErr_TotMean[Nt][2];
+  Real CorrMu_TotMean[Nt], CorrErr_TotMean[Nt];
   for(int t=0; t<Nt; t++){
     for(int d=0; d<Dim; d++){  
-      if(d==0 or d==1){
-	CorrMu_TotMean[t][0] += CorrMu_Tot[d][t];
-	//CorrErr_TotMean[t] += CorrErr_Tot[d][t]*CorrErr_Tot[d][t];
-      }
-      else if(d==2) CorrMu_TotMean[t][1] = CorrMu_Tot[d][t];
+      CorrMu_TotMean[t] += CorrMu_Tot[d][t];
+      CorrErr_TotMean[t] += CorrErr_Tot[d][t]*CorrErr_Tot[d][t];
     }
-    CorrMu_TotMean[t][0] = CorrMu_TotMean[t][0]/2;
-    //CorrErr_TotMean[t] =  CorrErr_TotMean[t]/3;
+    CorrMu_TotMean[t] = CorrMu_TotMean[t]/3;
+    CorrErr_TotMean[t] =  CorrErr_TotMean[t]/3;
     
-    //CorrMu_TotMean[t] =  e2*CorrMu_TotMean[t];
-    //CorrErr_TotMean[t] = e2*sqrt(CorrErr_TotMean[t]);
-    //cout << t << "  " << CorrMu_TotMean[t] <<  "  " << CorrErr_TotMean[t] << endl;
+    CorrMu_TotMean[t] =  e2*CorrMu_TotMean[t];
+    CorrErr_TotMean[t] = e2*sqrt(CorrErr_TotMean[t]);
+    cout << t << "  " << -CorrMu_TotMean[t] <<  "  " << CorrErr_TotMean[t] << endl;
     
     
   //C'è un fattore 12 di differenza
     
   }
-
-  for(int d=0; d<2; d++){
+  
+  /*for(int d=0; d<2; d++){
     for(int t=0; t<Nt; t++){
       
       cout << "d: " << d << " t: " << t << " CORR: "<< e2*CorrMu_TotMean[t][d] << endl;
       
     }
-  }
+  }*/
   /*
   Real CorrMu_TotMean[Nt][2], CorrErr_TotMean[Nt][2];
   

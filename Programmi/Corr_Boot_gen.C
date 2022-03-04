@@ -10,7 +10,7 @@ using namespace std;
 
 int NMass=3, Dim=3, Nt=40,NBz=3;
 
-int Nboot = 200;
+int Nboot = 100;
 int NConf[3]={47,102,56};
 
 string M[3] = {"mu", "md", "ms"};
@@ -53,7 +53,7 @@ int main(){
   
   for(int bz=0; bz<NBz; bz++){
     
-    sprintf(open_Correlators_bz_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b%d/meson_corrs_Cleaned_%d", Bz[bz], NConf[bz]);
+    sprintf(open_Correlators_bz_Inputs, "/Users/manuel/Misure_Bz_Fixed/T40L48_beta4.14_b%d/meson_corrs_Cleaned_%d", Bz[bz], NConf[bz]);
     if ((Correlators_bz_Inputs = fopen(open_Correlators_bz_Inputs, "r")) == NULL ){
       printf("Error opening the input file: %s\n",open_Correlators_bz_Inputs);
       exit(EXIT_FAILURE);
@@ -278,7 +278,7 @@ int main(){
       for(int t=0; t<Nt; t++){
 	for(int iboot=0; iboot<Nboot; iboot++){
 
-	  fprintf(Boot_output, "%s " "%s\n", conv(tE[t]).c_str(), conv(Corr_bz_boot_mf_xz[bz][d][t][iboot]).c_str());
+	  fprintf(Boot_output, "%s " "%s\n", conv(tE[t]).c_str(), conv(-Corr_bz_boot_mf_xz[bz][d][t][iboot]).c_str());
 	  
 	}
       }
@@ -303,8 +303,8 @@ int main(){
       
       for(int t=0; t<Nt; t++){
 	Real Mu=Boot_Mean(Corr_bz_boot_mf_xz[bz][d][t], Nboot);
-	Real Sigma =  Boot_Sigma(Corr_bz_boot_mf_xz[bz][d][t], Nboot);
-	fprintf(MuSigma_output, "%s " "%s " "%s\n", conv(tE[t]).c_str(), conv(Mu).c_str(), conv(Sigma).c_str());
+	Real Sigma =  Boot_Sigma(Corr_bz_boot_mf_xz[bz][d][t], Nboot, NConf[bz]);
+	fprintf(MuSigma_output, "%s " "%s " "%s\n", conv(tE[t]).c_str(), conv(-Mu).c_str(), conv(Sigma).c_str());
       }
       
     }
@@ -382,7 +382,7 @@ int main(){
       for(int t=0; t<Nt; t++){
 	for(int iboot=0; iboot<Nboot; iboot++){
 	  
-	  fprintf(Boot_sub_output, "%s " "%s\n", conv(tE[t]).c_str(), conv(Corr_bz_boot_mf_xz_sub[bz][d][t][iboot]).c_str());
+	  fprintf(Boot_sub_output, "%s " "%s\n", conv(tE[t]).c_str(), conv(-Corr_bz_boot_mf_xz_sub[bz][d][t][iboot]).c_str());
 	  
 	}
       }
@@ -407,8 +407,8 @@ int main(){
       
       for(int t=0; t<Nt; t++){
 	Real Mu=Boot_Mean(Corr_bz_boot_mf_xz_sub[bz][d][t], Nboot); 
-	Real Sigma=Boot_Sigma(Corr_bz_boot_mf_xz_sub[bz][d][t], Nboot);
-        fprintf(MuSigma_sub_output, "%s " "%s " "%s\n", conv(tE[t]).c_str(), conv(Mu).c_str(), conv(Sigma).c_str());
+	Real Sigma=Boot_Sigma(Corr_bz_boot_mf_xz_sub[bz][d][t], Nboot, NConf[bz]);
+        fprintf(MuSigma_sub_output, "%s " "%s " "%s\n", conv(tE[t]).c_str(), conv(-Mu).c_str(), conv(Sigma).c_str());
 	
       }
     }

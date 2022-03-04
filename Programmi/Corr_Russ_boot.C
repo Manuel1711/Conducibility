@@ -1,0 +1,185 @@
+#include <iostream>
+#include <math.h>
+#include "mp.h"
+#include <random>
+#include <TH1F.h>
+#include <TCanvas.h>
+#include "statistical.h"
+
+using namespace std;
+ 
+#define NMass 3
+#define Dim 3
+#define Nt 10
+
+int NConf=108, Nboot=100;
+
+string M[3] = {"mu", "md", "ms"};
+string D_s[3] = {"xx", "yy", "zz"};
+
+
+Real e2 = 4*Pi/(137.04);
+
+int main(){
+
+  Real Corr[NConf][NMass][Dim][Nt];
+  Real tE[Nt];
+  FILE *Correlators_Inputs;
+  char open_Correlators_Inputs[1024];
+  //double C[3]={0.66666666666666666667, -0.33333333333333333333, -0.33333333333333333333};
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T12_b4.06100000_ml0.0009168830_ms0.0258102551_zero_strange/nissa_mu0.200/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T10_b3.85_ml0.0014_ms0.0394_zero_strange/nissa_mu0.200/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/mu_zero/L48_T10_b3.96127000_ml0.0011192722_ms0.0315075218/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure/L48_T12_b3.93998000_ml0.0011677267_ms0.0328715394_zero_strange/nissa_mu0.140/meson_corrs_Cleaned");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b0/meson_corrs_Cleaned_47"); 
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b41/meson_corrs_Cleaned_102");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_Bz/T40L48_beta4.14_b93/meson_corrs_Cleaned_56");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_mu/mu_zero/L48_T12_b4.06100000_ml0.0009168830_ms0.0258102551/meson_corrs_Cleaned_105");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_mu/mu_zero/L48_T12_b3.93998000_ml0.0011677267_ms0.0328715394/meson_corrs_Cleaned_33");
+  sprintf(open_Correlators_Inputs, "/Users/manuel/Misure_mu/mu_zero/L48_T10_b3.96127000_ml0.0011192722_ms0.0315075218/meson_corrs_Cleaned_108"); 
+  if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Correlators_Inputs);
+    exit(EXIT_FAILURE);
+  }
+
+  
+  char trash1[1024], trash2[1024];
+  double trash3;
+  
+  for(int conf=0; conf<NConf; conf++){ 
+    for(int d=0; d<Dim; d++){
+      for(int m=0; m<NMass; m++){
+	cout << "conf: " << conf << " d: " << d << " m: " << m << endl;
+	for(int t=0; t<Nt; t++){
+	  
+	  fscanf(Correlators_Inputs, "%s " "%s " "%lf\n", trash1, trash2, &trash3);
+	  tE[t] = conv(trash1);
+	  Corr[conf][m][d][t] = conv(trash2);
+	  cout << "tE: " << tE[t] << " Corr: " << Corr[conf][m][d][t] << endl;
+	  
+	  
+	}//t
+	
+      }//d
+    }//m
+  }//conf
+  
+  //Generation of bootstrap events
+  Real *****Corr_bz_boot = new Real****[NConf];
+  for(int iconf = 0; iconf < NConf; iconf++){
+    Corr_bz_boot[iconf] = new Real***[NMass];
+    for(int m = 0; m < NMass; m++){
+      Corr_bz_boot[iconf][m] = new Real**[Dim];
+      for(int d=0; d<Dim; d++){
+	Corr_bz_boot[iconf][m][d] = new Real*[Nt];
+	for(int t=0; t<Nt; t++){
+	  Corr_bz_boot[iconf][m][d][t] = new Real[Nboot];
+	}
+      } 
+    }
+  }
+  random_device rd;
+  mt19937 gen(rd());
+  uniform_int_distribution<> distrib(0,NConf-1);
+  for(int m=0; m<NMass; m++){
+    for(int d=0; d<Dim; d++){
+      for(int t=0; t<Nt; t++){
+	for(int iboot=0; iboot<Nboot; iboot++){
+	  for(int iconf=0; iconf<NConf; iconf++){
+	    //cout << "INT: " << distrib(gen) << endl; 
+	    Corr_bz_boot[iconf][m][d][t][iboot] = Corr[distrib(gen)][m][d][t];
+	  } 
+	}
+	
+      }
+    }
+  }
+
+
+  //Media sulle configurazioni 
+  Real ****Corr_bz_boot_m = new Real***[NMass];
+  for(int m = 0; m < NMass; m++){
+    Corr_bz_boot_m[m] = new Real**[Dim];
+    for(int d=0; d<Dim; d++){
+      Corr_bz_boot_m[m][d] = new Real*[Nt];
+      for(int t=0; t<Nt; t++){
+	Corr_bz_boot_m[m][d][t] = new Real[Nboot];
+      }
+    }
+  }
+  
+  for(int m = 0; m < NMass; m++){
+    for(int d=0; d<Dim; d++){
+      for(int t=0; t<Nt; t++){
+	for(int iboot=0; iboot<Nboot; iboot++){
+	  for(int iconf=0; iconf<NConf; iconf++){
+	    Corr_bz_boot_m[m][d][t][iboot] += Corr_bz_boot[iconf][m][d][t][iboot];
+	  }
+	  Corr_bz_boot_m[m][d][t][iboot]=Corr_bz_boot_m[m][d][t][iboot]/NConf;
+	}
+      }
+    }
+  }
+  for(int iconf=0; iconf<NConf; iconf++){
+    for(int m = 0; m < NMass; m++){
+      for(int d=0; d<Dim; d++){
+	for(int t=0; t<Nt; t++){
+	  delete[] Corr_bz_boot[iconf][m][d][t];
+	}
+	  delete[] Corr_bz_boot[iconf][m][d];
+	}
+	delete[] Corr_bz_boot[iconf][m];
+    }
+    delete[] Corr_bz_boot[iconf];
+  }
+  delete[] Corr_bz_boot;
+  
+  //Somma sui 3 flavor pesato dalle cariche
+  Real ***Corr_bz_boot_mf = new Real**[Dim];
+  for(int d=0; d<Dim; d++){
+    Corr_bz_boot_mf[d] = new Real*[Nt];
+    for(int t=0; t<Nt; t++){
+      Corr_bz_boot_mf[d][t] = new Real[Nboot];
+    }
+  }
+  
+  for(int d=0; d<Dim; d++){
+    for(int t=0; t<Nt; t++){
+      for(int iboot=0; iboot<Nboot; iboot++){
+	
+	//for(int m = 0; m < NMass; m++){
+	//Corr_bz_boot_mf[d][t][iboot] += e2*C[m]*C[m]*Corr_bz_boot_m[m][d][t][iboot]/16; //1/16 che viene dalla (7)
+	Corr_bz_boot_mf[d][t][iboot] = e2*(4*Corr_bz_boot_m[0][d][t][iboot]/9+Corr_bz_boot_m[1][d][t][iboot]/9 + Corr_bz_boot_m[2][d][t][iboot]/9)/16;
+	//cout << "MASS: "  << 4*Corr_bz_boot_m[0][d][t][iboot]/9 << endl;
+	//}
+	//cout << "bz: " << bz << " d: " << d << " t: " << t << " iboot: " << iboot << " C: " << Corr_bz_boot_mf[bz][d][t][iboot]<< endl;
+      }
+    }
+  }
+  
+  //Media su x,y
+  Real **Corr_bz_boot_mf_xz = new Real*[Nt];
+  for(int t=0; t<Nt; t++)
+    Corr_bz_boot_mf_xz[t] = new Real[Nboot];
+  
+  for(int t=0; t<Nt; t++){
+    for(int iboot=0; iboot<Nboot; iboot++){
+      for(int d=0; d<Dim; d++){
+	
+	Corr_bz_boot_mf_xz[t][iboot] +=  Corr_bz_boot_mf[d][t][iboot];
+	
+      }
+      Corr_bz_boot_mf_xz[t][iboot] = Corr_bz_boot_mf_xz[t][iboot]/Dim;
+    }
+  }
+
+
+  //Ricombino bootstrap
+  for(int t=0; t<Nt; t++){
+    cout << setprecision(20)  << (Boot_Mean( Corr_bz_boot_mf_xz[t], Nboot))/(e2*3)*(-4) << "  " << Boot_Sigma(Corr_bz_boot_mf_xz[t], Nboot, Boot_Mean( Corr_bz_boot_mf_xz[t], Nboot))/(e2*3)*4 << endl;
+  }
+
+  return 0;
+
+
+}

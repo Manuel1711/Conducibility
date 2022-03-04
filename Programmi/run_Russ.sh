@@ -8,6 +8,6 @@ optimization="0 -g"
 
 
 
-g++ -O$optimization -std=c++11 -o Corr_Russ Corr_Russ.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas 
+g++ -O$optimization -std=c++11 -o Corr_Russ_copia Corr_Russ_copia.C -I/mnt/c/Users/navigl/Desktop/gsl/include -I/Users/manuel/Desktop/gmpfrxx  -L/Users/manuel/Desktop/gmpfrxx -I/usr/local/include -L/usr/local/include  -lgmpfrxx -lmpfr -lgmpxx -lgmp -lm -I/opt/local/include -L/opt/local/lib -lgsl -lgslcblas 
 
-./Corr_Russ
+./Corr_Russ_copia
