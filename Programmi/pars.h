@@ -8,11 +8,13 @@ static Real beta=tmax+1;
 //Nazario shifta di 1. Per lui t_max=30 partendo in realtà da 0 (Quindi D_Latt=31). Qui si parte sempre da 1.
 static const Real sigma=1.7/12;
 static Real E0=0.0; 
-static const Real alpha=0;
-static const Real lambda=0.01;
+static const Real alpha=0; 
+static const Real lambda=0.99999999;
 static const int Nboot = 100;
+int EO = 1;
+//EO=0 -> even, EO=1 -> odd
 /////////////////////////////////////////                                   
- 
+
 //SETTA LA PRECISIONE DESIDERATA IN BITS                                   
 const int P = 1024;
 struct Initer

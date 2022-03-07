@@ -191,14 +191,14 @@ Real spectral(PrecVec q, PrecVec C){
 
 
 Real stat_unc(PrecVec q, PrecVec dC){
-
+  
   Real err=0;
   for(int i=0; i<Nt; i++)
     err += q(i)*dC(i);
   return err;
   
 }
- 
+
 
 void delta_sigma_procedure(Real delta_sigma, Real Es, Real t_a[], PrecVec R, PrecMatr Winv){
   
