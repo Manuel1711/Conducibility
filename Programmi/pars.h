@@ -9,9 +9,9 @@ static Real beta=tmax+1;
 static const Real sigma=1.7/12;
 static Real E0=0.0; 
 static const Real alpha=0; 
-static const Real lambda=0.99999999;
+//static const Real lambda=0.9999999;
 static const int Nboot = 100;
-int EO = 1;
+int EO = 0;
 //EO=0 -> even, EO=1 -> odd
 /////////////////////////////////////////                                   
 

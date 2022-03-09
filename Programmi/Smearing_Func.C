@@ -46,6 +46,8 @@ int main(){
   
   sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Bootstraps/T40L48_beta4.14_b93_Subtracted/boot_correlators_xy.out");
   sprintf(open_Correlators_Inputs_MuS, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Means_Sigmas/T40L48_beta4.14_b93_Subtracted/mu_sigma_correlators_xy.out");
+  //sprintf(open_Correlators_Inputs, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Bootstraps/T20L24_beta3.787_b93_Subtracted/boot_correlators_z.out");
+  //2sprintf(open_Correlators_Inputs_MuS, "/Users/manuel/Documents/GitHub/Conducibility/Programmi/Our_Correlators_bz/Subtracted/Means_Sigmas/T20L24_beta3.787_b93_Subtracted/mu_sigma_correlators_z.out");
   
   if ((Correlators_Inputs = fopen(open_Correlators_Inputs, "r")) == NULL ){
     printf("Error opening the input file: %s\n",open_Correlators_Inputs);
@@ -107,15 +109,28 @@ int main(){
   
   // ************************ INIZIO METODO ******************************
   
+  FILE *Lambda_Shape_out;
+  char open_Lambda_Shape_out[1024];
+
+  sprintf(open_Lambda_Shape_out, "Output/Lambda_Shape.out");
+  if ((Lambda_Shape_out = fopen(open_Lambda_Shape_out, "w")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Lambda_Shape_out);
+    exit(EXIT_FAILURE);
+  }
+
   
-  //Inputs
-  for(int iboot=0; iboot<Nboot; iboot++){
-      
-    PrecVec Corr(Nt), Corr_err(Nt), Corr_Mu(Nt), R(Nt);
-    PrecMatr Cov(Nt,Nt);
-    Real t_a[Nt];
-    for(int i=0; i<Nt; i++){
-      if(EO==0){
+  for(int ilambda=40; ilambda<100; ilambda++){
+
+    Real lambda = conv(to_string(ilambda))/100;
+    cout << "Lambda: " << lambda << endl;
+     
+    for(int iboot=0; iboot<Nboot; iboot++){
+      //Inputs
+      PrecVec Corr(Nt), Corr_err(Nt), Corr_Mu(Nt), R(Nt);
+      PrecMatr Cov(Nt,Nt);
+      Real t_a[Nt];
+      for(int i=0; i<Nt; i++){
+	if(EO==0){
 	  Corr(i)=Corr_e(iboot,i);
 	  Corr_err(i) = Corr_err_e(i);
 	  Corr_Mu(i) = Corr_mu_e(i);
@@ -125,9 +140,9 @@ int main(){
 	  Corr_err(i) = Corr_err_o(i);
 	  Corr_Mu(i) = Corr_mu_o(i);
 	}
-	cout << "iboot: " << iboot << " i: " << i << " C: " << Corr(i) << endl;
+	//cout << "iboot: " << iboot << " i: " << i << " C: " << Corr(i) << endl;
       } 
-
+      
       //Binnaggio t
       e=0;
       o=0;
@@ -140,198 +155,207 @@ int main(){
 	  t_a[o] = 2*i-1; 
 	  o++;
 	}
-	cout << "t_a[" << i-1 << "]" << t_a[i-1] << endl;
+	//cout << "t_a[" << i-1 << "]" << t_a[i-1] << endl;
       }
       for(int i=0; i<Nt; i++){
 	for(int j=0; j<Nt; j++){
 	  if(i==j){
 	    Cov(i,j)=Corr_err(i)*Corr_err(j);
-	    cout << "Cov: " <<  Cov(i,j) << endl; 
+	    //cout << "Cov: " <<  Cov(i,j) << endl; 
 	  }
 	  else Cov(i,j)=0;
 	}
       }
-  
-  
-  
-  //Calcolo matrice W
-  for(int i=0; i<Nt; i++){
-    for(int j=0; j<Nt; j++){
+      
+      
+      
+      //Calcolo matrice W
+      for(int i=0; i<Nt; i++){
+	for(int j=0; j<Nt; j++){
 #if defined(EXP)
-      W_Mat(i,j) = (1-lambda)*W_an_exp(t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
+	  W_Mat(i,j) = (1-lambda)*W_an_exp(t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
 #endif 
 #if defined(COS)
-      W_Mat(i,j) = (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
-      //cout << "i=" << i << " j=" << j << " A: " << W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << Cov(i,j)  << endl;
-      //cout << "LAMBDA:  i" << i << " j=" << j << " A: " << (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << lambda*Cov(i,j)  << endl;
+	  W_Mat(i,j) = (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
+	  //cout << "i=" << i << " j=" << j << " A: " << W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << Cov(i,j)  << endl;
+	  //cout << "LAMBDA:  i" << i << " j=" << j << " A: " << (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << lambda*Cov(i,j)  << endl;
 #endif
-      //cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
-    }//j
-      
-    
-    //Calcolo vettore R
+	  //cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
+	}//j
+	
+	
+	//Calcolo vettore R
 #if defined(HLN)
 #if defined(EXP)
-    R(i) = 1/(t_a[i])*exp(-E0*t_a[i]);
+	R(i) = 1/(t_a[i])*exp(-E0*t_a[i]);
 #endif
 #if defined(COS)
-    R(i) = R_NInt(infLimit, supLimit, t_a[i]);
+	R(i) = R_NInt(infLimit, supLimit, t_a[i]);
 #endif
 #endif
-    
+	
 #if defined(BG)
 #if defined(EXP)
-    R(i) = 1/(t_a[i]);
+	R(i) = 1/(t_a[i]);
 #endif
 #if defined(COS)
-    R(i) = R_NInt(infLimit, supLimit, t_a[i]);
+	R(i) = R_NInt(infLimit, supLimit, t_a[i]);
 #endif
 #endif
-    //cout << "R[" << t_a[i] << "]=" << R(i) << endl;
-  }//i
-  
-  
-  
-  
-  //Inversione matrice W
-  const auto Winv=W_Mat.inverse();
-  
-  
-  //Calcolo f (solo BG modificato)
-  PrecVec f(Nt);
-#if defined(HLN)
-  f = f_func(t_a, sigma, Estar);
-#endif
-  
-  
-  //Calcolo g
-  PrecVec g;
-  g = Coeff(R,Winv,f);
-  for(int i=0; i<Nt; i++)
-    cout << "g(" << i << ")="<< g(i) << endl;
-  
-  
-  //Output coefficienti
-  FILE *q_t_out;
-  char open_q_t_out[1024];
-  
-  sprintf(open_q_t_out, "Output/q_t_out.out");
-  if ((q_t_out = fopen(open_q_t_out, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_q_t_out);
-    exit(EXIT_FAILURE);
-  }
-  for(int i=0; i<Nt; i++){
-    fprintf(q_t_out, "%s " "%s\n", conv(t_a[i]).c_str(), conv(g(i)).c_str());
-  }
-  fclose(q_t_out);
-  
-  
-
-  //Output funzione di smearing
-  FILE *Delta_S;
-  char open_Delta_S[1024];
-  
-  if(EO==0)sprintf(open_Delta_S, "Output/Delta_Smear_e.out");
-  if(EO==1)sprintf(open_Delta_S, "Output/Delta_Smear_o.out");
-  
-  if ((Delta_S = fopen(open_Delta_S, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_Delta_S);
-    exit(EXIT_FAILURE);
-  }
-  
-   
-#if defined(BG)
-  E0=0;
-#endif
-  fprintf(Delta_S, "@type xy\n");
-  for(double i=0; i<300; i++){
-    
-    fprintf(Delta_S, "%s " "%s\n", conv(E0 +0.0001 + i/100).c_str(), conv(Delta_Smear(E0 + 0.0001 + i/100, g, t_a)).c_str());
+	//cout << "R[" << t_a[i] << "]=" << R(i) << endl;
+      }//i
       
-  }
-  
+      
+      
+      
+      //Inversione matrice W
+      const auto Winv=W_Mat.inverse();
+      
+      
+      //Calcolo f (solo BG modificato)
+      PrecVec f(Nt);
 #if defined(HLN)
-  fprintf(Delta_S, "\n \n @type xy \n");
-  
-  for(double i=0; i<300; i++){
-    
-    fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 +i/100).c_str(), conv(Target_F(E0 + 0.0001 + i/100, Estar, sigma)).c_str());
-  }
-  
-  
-  fprintf(Delta_S, "\n \n @type xy \n");
-  for(double i=0; i<300; i++){
-    Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
-    fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
-  }
-  
-    
-  fclose(Delta_S);
-  
-  
-  //Output differenza target/HLN
-  FILE *Diff;
-  char open_Diff[1024];
-  
-  
-  sprintf(open_Diff, "Output/Diff.out");
-  
-  if ((Diff = fopen(open_Diff, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_Diff);
-    exit(EXIT_FAILURE);
-  }
-  
-  fprintf(Diff, "\n \n @type xy \n");
-  for(double i=0; i<300; i++){
-    Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
-    fprintf(Diff, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
-  }
-  
-  fclose(Diff);
+      f = f_func(t_a, sigma, Estar);
 #endif
+      
+      
+      //Calcolo g
+      PrecVec g;
+      g = Coeff(R,Winv,f);
+      for(int i=0; i<Nt; i++)
+	//cout << "g(" << i << ")="<< g(i) << endl;
+      
+      
+      //Output coefficienti
+      /*FILE *q_t_out;
+	char open_q_t_out[1024];
+	
+	sprintf(open_q_t_out, "Output/q_t_out.out");
+	if ((q_t_out = fopen(open_q_t_out, "w")) == NULL ){
+	printf("Error opening the output file: %s\n",open_q_t_out);
+	exit(EXIT_FAILURE);
+	}
+	for(int i=0; i<Nt; i++){
+	fprintf(q_t_out, "%s " "%s\n", conv(t_a[i]).c_str(), conv(g(i)).c_str());
+	}
+	fclose(q_t_out);
+      */
+      
+      
+      //Output funzione di smearing
+      /*FILE *Delta_S;
+      char open_Delta_S[1024];
+      
+      if(EO==0)sprintf(open_Delta_S, "Output/Delta_Smear_e.out");
+      if(EO==1)sprintf(open_Delta_S, "Output/Delta_Smear_o.out");
+      
+      if ((Delta_S = fopen(open_Delta_S, "w")) == NULL ){
+	printf("Error opening the input file: %s\n",open_Delta_S);
+	exit(EXIT_FAILURE);
+      }
+      
+      
+#if defined(BG)
+      E0=0;
+#endif
+      fprintf(Delta_S, "@type xy\n");
+      for(double i=0; i<300; i++){
+	
+	fprintf(Delta_S, "%s " "%s\n", conv(E0 +0.0001 + i/100).c_str(), conv(Delta_Smear(E0 + 0.0001 + i/100, g, t_a)).c_str());
+	
+      }
+      
+#if defined(HLN)
+      fprintf(Delta_S, "\n \n @type xy \n");
+      
+      for(double i=0; i<300; i++){
+	
+	fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 +i/100).c_str(), conv(Target_F(E0 + 0.0001 + i/100, Estar, sigma)).c_str());
+      }
+      
+      
+      fprintf(Delta_S, "\n \n @type xy \n");
+      for(double i=0; i<300; i++){
+	Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
+	fprintf(Delta_S, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
+      }
+      
+      
+      fclose(Delta_S);
+      
+      
+      //Output differenza target/HLN
+      FILE *Diff;
+      char open_Diff[1024];
   
-  // Spectral function computation
+      
+      sprintf(open_Diff, "Output/Diff.out");
+      
+      if ((Diff = fopen(open_Diff, "w")) == NULL ){
+	printf("Error opening the input file: %s\n",open_Diff);
+	exit(EXIT_FAILURE);
+      }
+      
+      fprintf(Diff, "\n \n @type xy \n");
+      for(double i=0; i<300; i++){
+	Real df=Target_F(E0 + 0.0001 + i/100, Estar, sigma)-Delta_Smear(E0 + 0.0001 + i/100, g, t_a);
+	fprintf(Diff, "%s " "%s\n", conv(E0 + 0.0001 + i/100).c_str(), conv(df).c_str());
+      }
+      
+      fclose(Diff);
+      #endif
+      */
+
+      
+      // Spectral function computation
 #if defined(EXP)
-  Real fomega =1;
+      Real fomega =1;
 #endif
 #if defined(COS)
-  Real fomega = Estar;
+      Real fomega = Estar;
 #endif
-  rho[iboot]=spectral(g, Corr);
-  rho_S[iboot] = stat_unc(g, Corr_err);
-
-  if(abs(rho[iboot])>MIN) MIN=abs(rho[iboot]);
-  
-  //cout << "Bg ****** rho(" << iboot << ")=" << rho(iboot,eo) << endl;
-  if(EO==0) cout << "rho_even(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << endl;
-  if(EO==1) cout << "rho_odd(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << endl;
-  //cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
+      rho[iboot]=spectral(g, Corr);
+      rho_S[iboot] = stat_unc(g, Corr_err);
+      
+      if(abs(rho[iboot])>MIN) MIN=abs(rho[iboot]);
+      
+      //cout << "Bg ****** rho(" << iboot << ")=" << rho(iboot,eo) << endl;
+      if(EO==0) cout << "rho_even(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << "  Lambda=" << lambda << endl;
+      if(EO==1) cout << "rho_odd(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << " Lambda=" << lambda << endl;
+      //cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
 #if defined(HLN)
-  //cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
+      //cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
 #endif
+      
+      
+    }//iboot
+    
+    //cout << "MIN=" << MIN << endl;
+    
+    //cout << "Sigma: " << rho(0)+rho(1) << endl;
+    //cout << "Sigma Plot: " << (rho(0)+rho(1))/(2*(4*Pi/(137.04)*(0.6666666*0.6666666 + 2*0.33333333*0.33333333))) << endl;
+    
+    
+    //Media e Sigma bootstrap
+    Real rho_mu, rho_sigma, Bar_Sigma; 
+    
+    for(int iboot=0; iboot<Nboot; iboot++){
+      //cout << "rho(" << iboot << ")=" << rho[iboot] << " pm " << rho_S[iboot] << endl;
+    }
+    
+    rho_mu = Boot_Mean(rho, Nboot);
+    rho_sigma = Boot_Sigma(rho, Nboot);
+    
+    if(EO==0) cout << "rho_even_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
+    if(EO==1) cout << "rho_odd_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
+    
+    fprintf(Lambda_Shape_out, "%s " "%s " "%s\n", conv(lambda).c_str(), conv(rho_mu).c_str(), conv(rho_sigma).c_str());
+    
+    
+    
+  }//lambda
   
-  
-  }//iboot
-
-  cout << "MIN=" << MIN << endl;
-
-  //cout << "Sigma: " << rho(0)+rho(1) << endl;
-  //cout << "Sigma Plot: " << (rho(0)+rho(1))/(2*(4*Pi/(137.04)*(0.6666666*0.6666666 + 2*0.33333333*0.33333333))) << endl;
-
-  
-  //Media e Sigma bootstrap
-  Real rho_mu, rho_sigma, Bar_Sigma; 
-
-  for(int iboot=0; iboot<Nboot; iboot++){
-    cout << "rho(" << iboot << ")=" << rho[iboot] << " pm " << rho_S[iboot] << endl;
-  }
-  
-  rho_mu = Boot_Mean(rho, Nboot);
-  rho_sigma = Boot_Sigma(rho, Nboot);
-
-  if(EO==0) cout << "rho_even_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
-  if(EO==1) cout << "rho_odd_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
-
+  fclose(Lambda_Shape_out);
   
   /*for(int iboot=0; iboot<Nboot; iboot++){
     rho_mu += rho(iboot);

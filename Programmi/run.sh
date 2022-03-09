@@ -26,6 +26,12 @@ then
     N="-D CICLO"
 fi
 
+if [ $boolEsBin -eq 2 ]
+then
+    N="-D CICLO_LAMBDA"
+fi
+
+
 
 #method
 boolM=0
