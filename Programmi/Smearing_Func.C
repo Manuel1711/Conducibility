@@ -33,8 +33,8 @@ int main(){
   cout << "************ Estar=" << Estar << " ************" << endl;
   
   //////////////// PASSO LA PRECISIONE SETTATA DI DEFAULT //////////////    
-  PrecMatr W_Mat(Nt,Nt), Id(Nt, Nt), Id_bis(Nt, Nt), Corr_e(Nboot,Nt), Corr_o(Nboot,Nt);
-  PrecVec Corr_err_e(Nt), Corr_err_o(Nt), Corr_mu_e(Nt), Corr_mu_o(Nt);
+  PrecMatr W_Mat(Nt,Nt), Id(Nt, Nt), Id_bis(Nt, Nt), Corr_e(Nboot,Nt), Corr_o(Nboot,Nt), A(Nt,Nt);
+  PrecVec Corr_err_e(Nt), Corr_err_o(Nt), Corr_mu_e(Nt), Corr_mu_o(Nt), R(Nt);
   Real rho[Nboot], rho_S[Nboot], MIN=0;
   
   
@@ -109,82 +109,36 @@ int main(){
   
   // ************************ INIZIO METODO ******************************
   
-  FILE *Lambda_Shape_out;
-  char open_Lambda_Shape_out[1024];
+  //CALCOLO QUANTITà INDIPENDENTI DA CORR E CORR_ERR
 
-  sprintf(open_Lambda_Shape_out, "Output/Lambda_Shape.out");
-  if ((Lambda_Shape_out = fopen(open_Lambda_Shape_out, "w")) == NULL ){
-    printf("Error opening the input file: %s\n",open_Lambda_Shape_out);
-    exit(EXIT_FAILURE);
-  }
-
+  //Binnaggio t
+  e=0;
+  o=0;
+  Real t_a[Nt];
+  for(int i=1; i<Nt+1; i++){
+    if(EO==0){
+      t_a[e] = 2*i;
+      e++;
+    }
+    if(EO==1){
+      t_a[o] = 2*i-1; 
+      o++;
+    }
+    //cout << "t_a[" << i-1 << "]" << t_a[i-1] << endl;
+  }//i
   
-  for(int ilambda=40; ilambda<100; ilambda++){
-
-    Real lambda = conv(to_string(ilambda))/100;
-    cout << "Lambda: " << lambda << endl;
-     
-    for(int iboot=0; iboot<Nboot; iboot++){
-      //Inputs
-      PrecVec Corr(Nt), Corr_err(Nt), Corr_Mu(Nt), R(Nt);
-      PrecMatr Cov(Nt,Nt);
-      Real t_a[Nt];
-      for(int i=0; i<Nt; i++){
-	if(EO==0){
-	  Corr(i)=Corr_e(iboot,i);
-	  Corr_err(i) = Corr_err_e(i);
-	  Corr_Mu(i) = Corr_mu_e(i);
-	}
-	if(EO==1){
-	  Corr(i)=Corr_o(iboot,i);
-	  Corr_err(i) = Corr_err_o(i);
-	  Corr_Mu(i) = Corr_mu_o(i);
-	}
-	//cout << "iboot: " << iboot << " i: " << i << " C: " << Corr(i) << endl;
-      } 
-      
-      //Binnaggio t
-      e=0;
-      o=0;
-      for(int i=1; i<Nt+1; i++){
-	if(EO==0){
-	  t_a[e] = 2*i;
-	  e++;
-	}
-	if(EO==1){
-	  t_a[o] = 2*i-1; 
-	  o++;
-	}
-	//cout << "t_a[" << i-1 << "]" << t_a[i-1] << endl;
-      }
-      for(int i=0; i<Nt; i++){
-	for(int j=0; j<Nt; j++){
-	  if(i==j){
-	    Cov(i,j)=Corr_err(i)*Corr_err(j);
-	    //cout << "Cov: " <<  Cov(i,j) << endl; 
-	  }
-	  else Cov(i,j)=0;
-	}
-      }
-      
-      
-      
-      //Calcolo matrice W
-      for(int i=0; i<Nt; i++){
-	for(int j=0; j<Nt; j++){
+  //Calcolo matrice A
+  for(int i=0; i<Nt; i++){
+    for(int j=0; j<Nt; j++){
 #if defined(EXP)
-	  W_Mat(i,j) = (1-lambda)*W_an_exp(t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
+      A(i,j) = W_an_exp(t_a[i], t_a[j], Estar);
 #endif 
 #if defined(COS)
-	  W_Mat(i,j) = (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar)+lambda*Cov(i,j);
-	  //cout << "i=" << i << " j=" << j << " A: " << W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << Cov(i,j)  << endl;
-	  //cout << "LAMBDA:  i" << i << " j=" << j << " A: " << (1-lambda)*W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar) << " B: " << lambda*Cov(i,j)  << endl;
+      A(i,j) = W_NInt(infLimit, supLimit, t_a[i], t_a[j], Estar);
 #endif
-	  //cout << "W[" << t_a[i] << "][" << t_a[j] << "]=" << W_Mat(i,j) << endl;
-	}//j
-	
-	
-	//Calcolo vettore R
+    }
+    
+    //Calcolo vettore R
 #if defined(HLN)
 #if defined(EXP)
 	R(i) = 1/(t_a[i])*exp(-E0*t_a[i]);
@@ -203,28 +157,93 @@ int main(){
 #endif
 #endif
 	//cout << "R[" << t_a[i] << "]=" << R(i) << endl;
-      }//i
+  }//i
+
+  
+  //Calcolo f (solo BG modificato)
+  PrecVec f(Nt);
+#if defined(HLN)
+  f = f_func(t_a, sigma, Estar);
+#endif
+  
+
+
+  
+  // INIZIO CICLO SU LAMBDA E BOOTSTRAP
+  
+  FILE *Lambda_Shape_out, *Lambda_out;
+  char open_Lambda_Shape_out[1024], open_Lambda_out[1024];
+  
+  sprintf(open_Lambda_Shape_out, "Output/Lambda_Shape.out");
+  if ((Lambda_Shape_out = fopen(open_Lambda_Shape_out, "w")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Lambda_Shape_out);
+    exit(EXIT_FAILURE);
+  }
+  sprintf(open_Lambda_out, "Output/Lambda.out");
+  if ((Lambda_out = fopen(open_Lambda_out, "w")) == NULL ){
+    printf("Error opening the input file: %s\n",open_Lambda_out);
+    exit(EXIT_FAILURE);
+  }
+  
+  
+  for(int ilambda=1; ilambda<2; ilambda++){
+    
+    //Real lambda = 0.9999 + conv(to_string(ilambda))/10000000;
+    //Real lambda =  conv(to_string(ilambda))/1000;
+    //Real lambda = 1-pow(10,-ilambda);
+    Real lambda = 1-pow(10,-9);
+
+    
+    cout << "Lambda: " << lambda << endl;
+    
+    for(int iboot=0; iboot<Nboot; iboot++){
+
+      //Inputs per ogni bootstrap
+      PrecVec Corr(Nt), Corr_err(Nt), Corr_Mu(Nt);
+      PrecMatr Cov(Nt,Nt);
+      for(int i=0; i<Nt; i++){
+	if(EO==0){
+	  Corr(i)=Corr_e(iboot,i);
+	  Corr_err(i) = Corr_err_e(i);
+	  Corr_Mu(i) = Corr_mu_e(i);
+	}
+	if(EO==1){
+	  Corr(i)=Corr_o(iboot,i);
+	  Corr_err(i) = Corr_err_o(i);
+	  Corr_Mu(i) = Corr_mu_o(i);
+	}
+	//cout << "iboot: " << iboot << " i: " << i << " C: " << Corr(i) << endl;
+      } 
       
       
+      for(int i=0; i<Nt; i++){
+	for(int j=0; j<Nt; j++){
+	  if(i==j){
+	    Cov(i,j)=Corr_err(i)*Corr_err(j);
+	    //cout << "Cov: " <<  Cov(i,j) << endl; 
+	  }
+	  else Cov(i,j)=0;
+	}
+      }
       
       
+      //Calcolo W
+      W_Mat = (1-lambda)*A + lambda*Cov;
+      
+
       //Inversione matrice W
       const auto Winv=W_Mat.inverse();
-      
-      
-      //Calcolo f (solo BG modificato)
-      PrecVec f(Nt);
-#if defined(HLN)
-      f = f_func(t_a, sigma, Estar);
-#endif
       
       
       //Calcolo g
       PrecVec g;
       g = Coeff(R,Winv,f);
-      for(int i=0; i<Nt; i++)
-	//cout << "g(" << i << ")="<< g(i) << endl;
+      //for(int i=0; i<Nt; i++)
+      //cout << "g(" << i << ")="<< g(i) << endl;
       
+      //Real Functional = (1-lambda)*A + lambda*g.transpose()*Cov*g;
+      
+      //cout << "Func Terms: " << "(1-lambda)*A=" << (1-lambda)*g.transpose()*A*g << "lambda*g.transpose()*Cov*g=" << lambda*g.transpose()*Cov*g << endl;
       
       //Output coefficienti
       /*FILE *q_t_out;
@@ -243,7 +262,7 @@ int main(){
       
       
       //Output funzione di smearing
-      /*FILE *Delta_S;
+      FILE *Delta_S;
       char open_Delta_S[1024];
       
       if(EO==0)sprintf(open_Delta_S, "Output/Delta_Smear_e.out");
@@ -303,9 +322,9 @@ int main(){
       }
       
       fclose(Diff);
-      #endif
-      */
-
+#endif
+      
+	
       
       // Spectral function computation
 #if defined(EXP)
@@ -321,7 +340,7 @@ int main(){
       
       //cout << "Bg ****** rho(" << iboot << ")=" << rho(iboot,eo) << endl;
       if(EO==0) cout << "rho_even(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << "  Lambda=" << lambda << endl;
-      if(EO==1) cout << "rho_odd(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << " Lambda=" << lambda << endl;
+      if(EO==1) cout << "rho_odd(" << Estar << ")=" << rho[iboot] << "   " << stat_unc(g, Corr_err) << " Lambda=" <<  lambda << endl;
       //cout << "rho_true(" << Estar << ")=" << exp(-Estar) << endl;
 #if defined(HLN)
       //cout << "rho_int(" << Estar << ")=" << rho_NInt(infLimit, supLimit, Estar, sigma) << endl;
@@ -342,6 +361,7 @@ int main(){
     for(int iboot=0; iboot<Nboot; iboot++){
       //cout << "rho(" << iboot << ")=" << rho[iboot] << " pm " << rho_S[iboot] << endl;
     }
+
     
     rho_mu = Boot_Mean(rho, Nboot);
     rho_sigma = Boot_Sigma(rho, Nboot);
@@ -349,13 +369,14 @@ int main(){
     if(EO==0) cout << "rho_even_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
     if(EO==1) cout << "rho_odd_MU(" << Estar << ")=" << rho_mu << "   " << rho_sigma << endl;
     
-    fprintf(Lambda_Shape_out, "%s " "%s " "%s\n", conv(lambda).c_str(), conv(rho_mu).c_str(), conv(rho_sigma).c_str());
-    
+    fprintf(Lambda_Shape_out, "%s " "%s " "%s\n", conv(log(lambda/(1-lambda))).c_str(), conv(rho_mu).c_str(), conv(rho_sigma).c_str());
+    fprintf(Lambda_out, "%s\n", conv(lambda).c_str());
     
     
   }//lambda
   
   fclose(Lambda_Shape_out);
+  fclose(Lambda_out);
   
   /*for(int iboot=0; iboot<Nboot; iboot++){
     rho_mu += rho(iboot);
@@ -403,4 +424,4 @@ int main(){
   
   return 0;
     
-} 
+}
